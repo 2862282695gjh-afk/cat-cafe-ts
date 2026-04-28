@@ -1,8 +1,8 @@
 /**
  * 全局 AgentPool 实例 + Agent 注册（赤猫拉面馆）
  */
-import { AgentPool } from "@cat-cafe/core";
-import { ClaudeProcess } from "@cat-cafe/provider-claude";
+import { AgentPool } from "@cat-noodle/core";
+import { ClaudeProcess } from "@cat-noodle/provider-claude";
 import type { AgentConfig } from "./store/interface.js";
 
 export const pool = new AgentPool();

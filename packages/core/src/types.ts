@@ -1,5 +1,5 @@
 /**
- * @cat-cafe/core — 共享类型定义
+ * @cat-noodle/core — 共享类型定义
  */
 
 // ========== Content Blocks ==========

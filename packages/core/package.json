@@ -1,5 +1,5 @@
 {
-  "name": "@cat-cafe/core",
+  "name": "@cat-noodle/core",
   "version": "0.1.0",
   "type": "module",
   "main": "src/index.ts",

@@ -11,7 +11,7 @@ import type {
   ToolUseBlock,
   SendOptions,
   ResultEvent,
-} from "@cat-cafe/core";
+} from "@cat-noodle/core";
 
 const DEFAULT_BASE_URL = "https://api.anthropic.com";
 

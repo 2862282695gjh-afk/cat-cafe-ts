@@ -11,7 +11,7 @@ import type { Server as HTTPServer } from "node:http";
 import { Server } from "socket.io";
 import { pool, agentStatus, agentConfigs } from "../pool.js";
 import { MemoryStore } from "../store/memory.js";
-import type { AssistantEvent, ResultEvent } from "@cat-cafe/core";
+import type { AssistantEvent, ResultEvent } from "@cat-noodle/core";
 import type { SessionManager } from "../session-manager.js";
 import type { MemoryExtractor } from "../memory-extractor.js";
 import { saveSessionId, getSessionId } from "../store/session-store.js";
@@ -296,7 +296,7 @@ async function invokeWithA2A(
   if (!agent) return;
 
   const threadSession = getSessionId(agentId, threadId);
-  const claudeAgent = agent as import("@cat-cafe/provider-claude").ClaudeProcess;
+  const claudeAgent = agent as import("@cat-noodle/provider-claude").ClaudeProcess;
   if (typeof claudeAgent.switchSession === "function") claudeAgent.switchSession(threadSession ?? null);
 
   const callerName = callerId ? (agentConfigs[callerId]?.name ?? callerId) : "用户";

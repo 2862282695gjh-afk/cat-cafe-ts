@@ -1,5 +1,5 @@
 /**
- * @cat-cafe/server — 启动入口
+ * @cat-noodle/server — 启动入口
  *
  * npx tsx packages/server/src/index.ts
  */
@@ -37,7 +37,7 @@ async function main() {
       console.error("[Server] 启动失败:", err);
       process.exit(1);
     }
-    console.log(`[Server] Cat Cafe 运行在 ${address}`);
+    console.log(`[Server] Cat Noodle 运行在 ${address}`);
   });
 
   // 进程退出时清理所有 CLI 子进程

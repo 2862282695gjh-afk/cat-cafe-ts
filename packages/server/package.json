@@ -1,12 +1,12 @@
 {
-  "name": "@cat-cafe/server",
+  "name": "@cat-noodle/server",
   "version": "0.1.0",
   "type": "module",
   "main": "src/index.ts",
   "dependencies": {
-    "@cat-cafe/core": "*",
-    "@cat-cafe/provider-claude": "*",
-    "@cat-cafe/assistant": "*",
+    "@cat-noodle/core": "*",
+    "@cat-noodle/provider-claude": "*",
+    "@cat-noodle/assistant": "*",
     "fastify": "^5.2.0",
     "@fastify/cors": "^10.0.0",
     "socket.io": "^4.8.0",

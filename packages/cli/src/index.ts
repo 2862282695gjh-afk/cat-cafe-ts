@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { ClaudeProcess } from "@cat-cafe/provider-claude";
+import { ClaudeProcess } from "@cat-noodle/provider-claude";
 import type {
   StreamEvent,
   AssistantEvent,
   ResultEvent,
   ContentBlock,
   SystemEvent,
-} from "@cat-cafe/core";
+} from "@cat-noodle/core";
 
 const program = new Command();
 program
-  .name("cat-cafe")
-  .description("Cat Cafe — 多 Agent CLI 管理器")
+  .name("cat-noodle")
+  .description("Cat Noodle — 多 Agent CLI 管理器")
   .version("0.1.0");
 
 // ========== chat ==========

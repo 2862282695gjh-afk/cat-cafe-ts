@@ -1,7 +1,7 @@
 /**
  * 存储接口定义
  *
- * 对应 cat-cafe-python 中 RedisStorage / MemoryStorage 的抽象。
+ * 对应 cat-noodle-python 中 RedisStorage / MemoryStorage 的抽象。
  */
 
 export interface ThreadMeta {

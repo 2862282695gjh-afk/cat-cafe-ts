@@ -1,11 +1,11 @@
 {
-  "name": "@cat-cafe/cli",
+  "name": "@cat-noodle/cli",
   "version": "0.1.0",
   "type": "module",
-  "bin": { "cat-cafe": "./src/index.ts" },
+  "bin": { "cat-noodle": "./src/index.ts" },
   "dependencies": {
-    "@cat-cafe/core": "*",
-    "@cat-cafe/provider-claude": "*",
+    "@cat-noodle/core": "*",
+    "@cat-noodle/provider-claude": "*",
     "commander": "^13.0.0"
   }
 }

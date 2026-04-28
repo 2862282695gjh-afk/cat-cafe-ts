@@ -4,7 +4,7 @@
  * 每 N 轮对话后，用子 agent 从对话中提取长期记忆（用户画像、重要事实等），
  * 增量更新到 FileMemoryStore。
  */
-import { ClaudeProcess } from "@cat-cafe/provider-claude";
+import { ClaudeProcess } from "@cat-noodle/provider-claude";
 import { FileMemoryStore, type AgentLongMemory } from "./store/file-memory.js";
 
 export class MemoryExtractor {

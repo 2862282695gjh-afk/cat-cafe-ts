@@ -17,7 +17,7 @@ import type {
   AssistantEvent,
   ContentBlock,
   SendOptions,
-} from "@cat-cafe/core";
+} from "@cat-noodle/core";
 
 const RETRYABLE_PATTERNS = ["429", "rate limit", "too many requests"];
 

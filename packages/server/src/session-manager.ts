@@ -9,8 +9,8 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import type { ResultEvent } from "@cat-cafe/core";
-import { ClaudeProcess } from "@cat-cafe/provider-claude";
+import type { ResultEvent } from "@cat-noodle/core";
+import { ClaudeProcess } from "@cat-noodle/provider-claude";
 import { FileMemoryStore } from "./store/file-memory.js";
 
 // ========== 类型 ==========
