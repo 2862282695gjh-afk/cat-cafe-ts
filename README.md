@@ -2,6 +2,23 @@
 
 多 Agent 协作聊天系统，灵感来自动漫《赤猫拉面馆》（ラーメン赤貓）。四个 AI Agent 扮演拉面馆店员，通过 @mention 路由和 A2A（Agent-to-Agent）通信协作完成用户任务。
 
+## 功能截图
+
+<table>
+  <tr>
+    <td align="center"><b>多 Agent 实时面板</b></td>
+    <td align="center"><b>Agent 协作对话</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/cat-cafe_1.png" width="400"/></td>
+    <td><img src="docs/screenshots/cat-cafe_2.png" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center">Agent 状态、任务队列、流式输出实时展示</td>
+    <td align="center">多 Agent 并行协作，@mention 触发 A2A 通信</td>
+  </tr>
+</table>
+
 ## 架构概览
 
 ```
