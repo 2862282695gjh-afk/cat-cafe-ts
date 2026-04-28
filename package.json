@@ -1,0 +1,19 @@
+{
+  "name": "cat-cafe-ts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "tsx packages/cli/src/index.ts",
+    "chat": "tsx packages/cli/src/index.ts chat",
+    "build": "tsc -b"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "tsx": "^4.19.0",
+    "@types/node": "^22.0.0"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@cat-cafe/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": { "cat-cafe": "./src/index.ts" },
+  "dependencies": {
+    "@cat-cafe/core": "*",
+    "@cat-cafe/provider-claude": "*",
+    "commander": "^13.0.0"
+  }
+}
