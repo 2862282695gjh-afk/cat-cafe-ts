@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { api } from "../api/client";
 import type { TrainingPlan, NutritionAdvice } from "../components/FitTrackWidgets/types";
 
@@ -9,38 +9,44 @@ interface UseFitTrackReturn {
   error: string | null;
   refresh: () => void;
   completeExercise: (exerciseId: string, completed: boolean) => Promise<void>;
+  batchCompleteExercises: (items: Array<{ exerciseId: string; completed: boolean }>) => Promise<void>;
 }
-
-const DEFAULT_TRAINING: TrainingPlan = {
-  id: "plan-default",
-  name: "今日训练",
-  goal: "general",
-  totalXP: 0,
-  streak: 0,
-  progress: 0,
-  exercises: [],
-};
-
-const DEFAULT_NUTRITION: NutritionAdvice = {
-  proteinRecommendation: "暂无建议",
-  proteinSources: [],
-  hydrationTips: "保持充足饮水",
-  mealSuggestions: [],
-};
 
 export function useFitTrack(): UseFitTrackReturn {
   const [trainingPlan, setTrainingPlan] = useState<TrainingPlan | null>(null);
   const [nutritionAdvice, setNutritionAdvice] = useState<NutritionAdvice | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const etagRef = useRef<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await api.getFitTrack();
-      setTrainingPlan(data.trainingPlan ?? DEFAULT_TRAINING);
-      setNutritionAdvice(data.nutritionAdvice ?? DEFAULT_NUTRITION);
+      const headers: Record<string, string> = {};
+      if (etagRef.current) {
+        headers["If-None-Match"] = etagRef.current;
+      }
+
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL ?? ""}/api/fittrack`,
+        { headers },
+      );
+
+      // 304 未修改 — 直接使用缓存数据
+      if (res.status === 304) {
+        return;
+      }
+
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+
+      // 存储 ETag
+      const newETag = res.headers.get("ETag");
+      if (newETag) etagRef.current = newETag;
+
+      const data = await res.json();
+      setTrainingPlan(data.trainingPlan);
+      setNutritionAdvice(data.nutritionAdvice);
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载失败");
     } finally {
@@ -55,8 +61,41 @@ export function useFitTrack(): UseFitTrackReturn {
   const completeExercise = useCallback(
     async (exerciseId: string, completed: boolean) => {
       try {
-        const { plan } = await api.completeExercise(exerciseId, completed);
-        setTrainingPlan(plan);
+        const result = await api.completeExercise(exerciseId, completed);
+        // 增量更新：只修改本地状态中对应的 exercise
+        setTrainingPlan((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            progress: result.progress,
+            exercises: prev.exercises.map((e) =>
+              e.id === exerciseId ? { ...e, completed: result.exercise.completed } : e,
+            ),
+          };
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "操作失败");
+      }
+    },
+    [],
+  );
+
+  const batchCompleteExercises = useCallback(
+    async (items: Array<{ exerciseId: string; completed: boolean }>) => {
+      try {
+        const result = await api.batchCompleteExercises(items);
+        setTrainingPlan((prev) => {
+          if (!prev) return prev;
+          const updatedMap = new Map(result.updated.map((u) => [u.id, u.completed]));
+          return {
+            ...prev,
+            progress: result.progress,
+            exercises: prev.exercises.map((e) => {
+              const newCompleted = updatedMap.get(e.id);
+              return newCompleted !== undefined ? { ...e, completed: newCompleted } : e;
+            }),
+          };
+        });
       } catch (err) {
         setError(err instanceof Error ? err.message : "操作失败");
       }
@@ -71,5 +110,6 @@ export function useFitTrack(): UseFitTrackReturn {
     error,
     refresh: fetchData,
     completeExercise,
+    batchCompleteExercises,
   };
 }

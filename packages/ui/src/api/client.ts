@@ -40,10 +40,15 @@ export const api = {
 
   // FitTrack
   getFitTrack: () =>
-    fetchJSON<{ trainingPlan: import("../components/FitTrackWidgets/types").TrainingPlan | null; nutritionAdvice: import("../components/FitTrackWidgets/types").NutritionAdvice | null }>("/api/fittrack"),
+    fetchJSON<{ trainingPlan: import("../components/FitTrackWidgets/types").TrainingPlan | null; nutritionAdvice: import("../components/FitTrackWidgets/types").NutritionAdvice | null; updatedAt: number }>("/api/fittrack"),
   completeExercise: (exerciseId: string, completed: boolean) =>
-    fetchJSON<{ status: string; plan: import("../components/FitTrackWidgets/types").TrainingPlan }>(
+    fetchJSON<{ status: string; exercise: { id: string; completed: boolean }; progress: number; updatedAt: number }>(
       `/api/fittrack/training/exercises/${exerciseId}/complete`,
       { method: "PATCH", body: JSON.stringify({ completed }) },
+    ),
+  batchCompleteExercises: (items: Array<{ exerciseId: string; completed: boolean }>) =>
+    fetchJSON<{ status: string; updated: Array<{ id: string; completed: boolean }>; progress: number; updatedAt: number }>(
+      "/api/fittrack/training/exercises/batch-complete",
+      { method: "PATCH", body: JSON.stringify({ items }) },
     ),
 };

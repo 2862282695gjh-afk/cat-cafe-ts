@@ -7,6 +7,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 
 // ==================== 类型定义（与前端 types.ts 对齐） ====================
 
@@ -53,6 +54,17 @@ export interface FitTrackData {
   updatedAt: number;
 }
 
+// ==================== 工具函数 ====================
+
+function deepClone<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj)) as T;
+}
+
+function computeETag(data: unknown): string {
+  const hash = crypto.createHash("md5").update(JSON.stringify(data)).digest("hex").slice(0, 12);
+  return `"${hash}"`;
+}
+
 // ==================== JSON 文件持久化 ====================
 
 const DATA_DIR = path.resolve("data");
@@ -71,12 +83,15 @@ function writeJSON(filePath: string, data: unknown): void {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
 }
 
+// ==================== Store ====================
+
 export class FitTrackStore {
   private data: FitTrackData = {
     trainingPlan: null,
     nutritionAdvice: null,
     updatedAt: 0,
   };
+  private etag: string = "";
 
   /** 初始化：从磁盘加载 */
   load(): void {
@@ -85,38 +100,54 @@ export class FitTrackStore {
       nutritionAdvice: null,
       updatedAt: 0,
     });
+    this.rebuildETag();
+  }
+
+  /** 获取当前数据的 ETag */
+  getETag(): string {
+    return this.etag;
+  }
+
+  /** 获取最后更新时间 */
+  getUpdatedAt(): number {
+    return this.data.updatedAt;
+  }
+
+  private rebuildETag(): void {
+    this.etag = computeETag(this.data);
   }
 
   private save(): void {
     this.data.updatedAt = Date.now();
     writeJSON(FITTRACK_FILE, this.data);
+    this.rebuildETag();
   }
 
   // ===== Training Plan =====
 
   getTrainingPlan(): TrainingPlan | null {
-    return this.data.trainingPlan;
+    return this.data.trainingPlan ? deepClone(this.data.trainingPlan) : null;
   }
 
   setTrainingPlan(plan: TrainingPlan): void {
-    this.data.trainingPlan = plan;
+    this.data.trainingPlan = deepClone(plan);
     this.save();
   }
 
   // ===== Nutrition Advice =====
 
   getNutritionAdvice(): NutritionAdvice | null {
-    return this.data.nutritionAdvice;
+    return this.data.nutritionAdvice ? deepClone(this.data.nutritionAdvice) : null;
   }
 
   setNutritionAdvice(advice: NutritionAdvice): void {
-    this.data.nutritionAdvice = advice;
+    this.data.nutritionAdvice = deepClone(advice);
     this.save();
   }
 
   // ===== 全量数据 =====
 
   getAll(): FitTrackData {
-    return this.data;
+    return deepClone(this.data);
   }
 }
