@@ -1,0 +1,303 @@
+/* ========================================
+   Shared — 卡片基础 / 按钮 / 动画 / 响应式
+   ======================================== */
+
+/* === 卡片基础 === */
+.duo-card {
+  background: var(--duo-bg-card);
+  border-radius: var(--duo-radius-lg);
+  padding: var(--duo-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: transform var(--duo-duration-normal), box-shadow var(--duo-duration-normal);
+}
+
+.duo-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.duo-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.duo-card-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--duo-text-primary);
+}
+
+/* === Loading / Error 状态 === */
+.duo-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--duo-space-lg);
+  padding: 48px var(--duo-space-xl);
+  color: var(--duo-text-dim);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.duo-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--duo-bg-item);
+  border-top-color: var(--duo-green);
+  border-radius: 50%;
+  animation: duo-spin 0.8s linear infinite;
+}
+
+.duo-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--duo-space-md) var(--duo-space-lg);
+  background: rgba(255, 75, 75, 0.1);
+  border: 1px solid rgba(255, 75, 75, 0.25);
+  border-radius: var(--duo-radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--duo-red-soft);
+}
+
+/* === 3D 按钮 === */
+.duo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--duo-space-md) 24px;
+  border: none;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: background var(--duo-duration-fast), box-shadow var(--duo-duration-fast), transform var(--duo-duration-fast);
+  user-select: none;
+}
+
+.duo-btn-primary {
+  background: var(--duo-green);
+  color: var(--duo-text-primary);
+  box-shadow: var(--duo-shadow-btn);
+  border-bottom: 2px solid var(--duo-green-darker);
+}
+
+.duo-btn-primary:hover {
+  background: var(--duo-green-hover);
+}
+
+.duo-btn-primary:active {
+  box-shadow: 0 0 0 var(--duo-green-dark);
+  transform: translateY(4px);
+}
+
+.duo-btn-active {
+  background: var(--duo-green-dark);
+  color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 0 var(--duo-green-darker);
+  border-bottom: 2px solid var(--duo-green-darker);
+  animation: duo-pulse-border 2s ease-in-out infinite;
+}
+
+/* === AI 标签 === */
+.duo-ai-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: rgba(206, 130, 255, 0.12);
+  color: var(--duo-purple);
+  border-radius: var(--duo-radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border: 1px solid rgba(206, 130, 255, 0.25);
+}
+
+/* === 分区通用 === */
+.duo-section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--duo-space-sm);
+  margin-bottom: 2px;
+}
+
+.duo-section-icon {
+  font-size: 16px;
+}
+
+.duo-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--duo-text-primary);
+}
+
+.duo-section-count {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--duo-text-dim);
+}
+
+/* === Tooltip === */
+.duo-tooltip {
+  position: relative;
+}
+
+.duo-tooltip::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--duo-space-xs) 10px;
+  background: #0D1518;
+  color: var(--duo-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duo-duration-fast);
+  z-index: 10;
+}
+
+.duo-tooltip:hover::before,
+.duo-tooltip:focus-within::before {
+  opacity: 1;
+}
+
+/* === Focus Visible === */
+.duo-check-btn:focus-visible,
+.duo-btn:focus-visible,
+.duo-meal-header:focus-visible,
+.duo-close-btn:focus-visible {
+  outline: 2px solid var(--duo-green);
+  outline-offset: 2px;
+}
+
+/* ========================================
+   Keyframes
+   ======================================== */
+@keyframes duo-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes duo-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes duo-celebrate {
+  0% { transform: scale(0.95); opacity: 0; }
+  50% { transform: scale(1.03); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes duo-check-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+@keyframes duo-check-draw {
+  from { stroke-dashoffset: 20; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes duo-strikethrough {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes duo-glow-green {
+  0% { box-shadow: 0 0 0 rgba(88, 204, 2, 0); }
+  50% { box-shadow: 0 0 12px rgba(88, 204, 2, 0.3); }
+  100% { box-shadow: 0 0 0 rgba(88, 204, 2, 0); }
+}
+
+@keyframes duo-pulse-border {
+  0%, 100% { box-shadow: 0 2px 0 var(--duo-green-darker); }
+  50% { box-shadow: 0 2px 0 var(--duo-green-darker), 0 0 8px rgba(88, 204, 2, 0.25); }
+}
+
+@keyframes duo-particle {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) scale(0.4);
+  }
+}
+
+@keyframes duo-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes duo-expand-grid {
+  from { grid-template-rows: 0fr; }
+  to { grid-template-rows: 1fr; }
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+@media (max-width: 768px) {
+  .duo-card-header {
+    gap: var(--duo-space-sm);
+  }
+
+  .duo-header-badges {
+    flex-wrap: wrap;
+  }
+
+  .duo-exercise-item {
+    gap: 10px;
+    padding: var(--duo-space-sm) 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .duo-card {
+    padding: var(--duo-space-md);
+    border-radius: var(--duo-radius-md);
+  }
+
+  .duo-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--duo-space-sm);
+  }
+
+  .duo-exercise-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .duo-brand-owl {
+    font-size: 22px;
+  }
+
+  .duo-panel-title {
+    font-size: 16px;
+  }
+}

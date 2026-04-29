@@ -3,7 +3,7 @@ import { ThreadList } from "./components/ThreadList";
 import { ChatView } from "./components/ChatView";
 import { AgentPanel } from "./components/AgentPanel";
 import { FitTrackWidgetPanel } from "./components/FitTrackWidgets";
-import "./components/FitTrackWidgets/fittrack-widgets.css";
+import "./components/FitTrackWidgets/styles/index.css";
 import { ThemeProvider, useTheme } from "./themes";
 import { ramenTheme } from "./themes/ramen";
 import { useSocket } from "./hooks/useSocket";

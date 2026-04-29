@@ -1,0 +1,72 @@
+/* ========================================
+   FitTrack Design Tokens
+   ======================================== */
+
+:root {
+  /* Background layers */
+  --duo-bg-panel: #131F24;
+  --duo-bg-header-start: #1A2C33;
+  --duo-bg-header-end: #131F24;
+  --duo-bg-card: #1A2C33;
+  --duo-bg-item: #233B45;
+  --duo-bg-item-hover: #2A4553;
+
+  /* Borders */
+  --duo-border-header: #233B45;
+  --duo-border-footer: #1A2C33;
+  --duo-border-check: #3A5565;
+
+  /* Text hierarchy */
+  --duo-text-primary: #FFFFFF;
+  --duo-text-secondary: #E5E5E5;
+  --duo-text-muted: #8AA5B4;
+  --duo-text-dim: #6B8A99;
+  --duo-text-faint: #5E8A9B;
+
+  /* Brand colors */
+  --duo-green: #58CC02;
+  --duo-green-dark: #46A302;
+  --duo-green-darker: #3D8E02;
+  --duo-green-hover: #61E002;
+  --duo-gold: #FFC800;
+  --duo-gold-dim: #B89B5A;
+  --duo-purple: #CE82FF;
+  --duo-purple-dim: #8B6BAE;
+  --duo-purple-light: #BFA0D9;
+  --duo-red: #FF4B4B;
+  --duo-red-soft: #FF6B6B;
+  --duo-blue: #1CB0F6;
+  --duo-orange: #FF9600;
+
+  /* Spacing */
+  --duo-radius-sm: 8px;
+  --duo-radius-md: 12px;
+  --duo-radius-lg: 16px;
+  --duo-radius-pill: 20px;
+  --duo-space-xs: 4px;
+  --duo-space-sm: 8px;
+  --duo-space-md: 12px;
+  --duo-space-lg: 16px;
+  --duo-space-xl: 20px;
+
+  /* Shadows */
+  --duo-shadow-btn: 0 4px 0 var(--duo-green-dark);
+  --duo-shadow-check: 0 2px 0 var(--duo-green-darker);
+
+  /* Timing */
+  --duo-duration-fast: 0.15s;
+  --duo-duration-normal: 0.2s;
+  --duo-duration-slow: 0.3s;
+  --duo-ease-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Category colors */
+  --duo-cat-strength: var(--duo-purple);
+  --duo-cat-cardio: var(--duo-red);
+  --duo-cat-flexibility: var(--duo-blue);
+  --duo-cat-core: var(--duo-gold);
+
+  /* Meal card colors */
+  --duo-meal-0: var(--duo-gold);
+  --duo-meal-1: var(--duo-orange);
+  --duo-meal-2: var(--duo-blue);
+}

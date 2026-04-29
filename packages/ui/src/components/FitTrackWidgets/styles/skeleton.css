@@ -1,0 +1,86 @@
+/* ========================================
+   Skeleton — 骨架屏加载状态
+   ======================================== */
+
+.duo-skeleton {
+  background: var(--duo-bg-item);
+  border-radius: var(--duo-radius-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.duo-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.04), transparent);
+  background-size: 200% 100%;
+  animation: duo-shimmer 1.5s ease-in-out infinite;
+}
+
+.duo-skeleton-card {
+  background: var(--duo-bg-card);
+  border-radius: var(--duo-radius-lg);
+  padding: var(--duo-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.duo-skeleton-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.duo-skeleton-title {
+  width: 80px;
+  height: 18px;
+}
+
+.duo-skeleton-badge {
+  width: 52px;
+  height: 24px;
+  border-radius: var(--duo-radius-pill);
+}
+
+.duo-skeleton-progress {
+  height: 14px;
+  border-radius: 10px;
+  width: 100%;
+}
+
+.duo-skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: var(--duo-space-md);
+  padding: 10px 0;
+}
+
+.duo-skeleton-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--duo-radius-md);
+  flex-shrink: 0;
+}
+
+.duo-skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+}
+
+.duo-skeleton-line-long {
+  width: 120px;
+}
+
+.duo-skeleton-line-short {
+  width: 80px;
+}
+
+.duo-skeleton-check {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--duo-radius-sm);
+  margin-left: auto;
+  flex-shrink: 0;
+}
