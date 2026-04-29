@@ -390,6 +390,16 @@ async function invokeWithA2A(
         let finalText = agentText.get(agentId) ?? "";
         const logs = agentLogs.get(agentId);
 
+        // 检测 PASS：猫判断无需回复，跳过保存和展示
+        const isPass = /^\s*PASS\s*$/i.test(finalText.trim());
+        if (isPass) {
+          console.log(`[WS] agent ${agentConfigs[agentId]?.name ?? agentId} PASS（无需回复）`);
+          agentStatus.set(agentId, { status: "idle", message: "等待召唤", pendingCount: ctx.taskQueue.getPendingCount(agentId) });
+          ctx.io.emit("agent-status-update", { agentId, status: "idle", message: "等待召唤" });
+          broadcastTaskQueue();
+          return;
+        }
+
         // 解析项目文档更新
         const updateMatch = finalText.match(/<<<PROJECT-DOC-UPDATE>>>([\s\S]*?)<<<END-PROJECT-DOC-UPDATE>>>/);
         if (updateMatch) {
