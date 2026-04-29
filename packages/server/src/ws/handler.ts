@@ -10,7 +10,7 @@
 import type { Server as HTTPServer } from "node:http";
 import { Server } from "socket.io";
 import { pool, agentStatus, agentConfigs, MAX_A2A_DEPTH, MAX_A2A_CHAIN } from "../pool.js";
-import { MemoryStore } from "../store/memory.js";
+import type { Store } from "../store/interface.js";
 import type { AssistantEvent, ResultEvent } from "@cat-noodle/core";
 import type { SessionManager } from "../session-manager.js";
 import type { MemoryExtractor } from "../memory-extractor.js";
@@ -111,7 +111,7 @@ class AgentTaskQueue {
 
 interface WsContext {
   io: Server;
-  store: MemoryStore;
+  store: Store;
   sessionManager: SessionManager;
   memoryExtractor: MemoryExtractor;
   memoryStore: FileMemoryStore;
@@ -122,7 +122,7 @@ interface WsContext {
 
 // ========== WebSocket Setup ==========
 
-export function setupWebSocket(io: Server, store: MemoryStore, sessionManager: SessionManager, memoryExtractor: MemoryExtractor, memoryStore: FileMemoryStore, projectDocStore: ProjectDocStore) {
+export function setupWebSocket(io: Server, store: Store, sessionManager: SessionManager, memoryExtractor: MemoryExtractor, memoryStore: FileMemoryStore, projectDocStore: ProjectDocStore) {
   const ctx: WsContext = { io, store, sessionManager, memoryExtractor, memoryStore, taskQueue: new AgentTaskQueue(), abortControllers: new Map(), projectDocStore };
 
   function broadcastTaskQueue() {
