@@ -293,6 +293,15 @@
   animation: duo-check-draw 0.25s ease-out forwards;
 }
 
+.duo-check-btn.shrink {
+  animation: duo-check-shrink 0.25s ease-out;
+}
+
+/* Exercise shrink on uncheck */
+.duo-exercise-item.unchecking {
+  animation: duo-check-shrink 0.25s ease-out;
+}
+
 /* === 完成横幅 === */
 .duo-complete-banner {
   display: flex;

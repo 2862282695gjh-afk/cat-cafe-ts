@@ -67,6 +67,24 @@
   color: var(--duo-red-soft);
 }
 
+.duo-error-retry-btn {
+  margin-left: auto;
+  padding: var(--duo-space-xs) var(--duo-space-md);
+  background: rgba(255, 75, 75, 0.15);
+  color: var(--duo-red-soft);
+  border: 1px solid rgba(255, 75, 75, 0.3);
+  border-radius: var(--duo-radius-sm);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--duo-duration-fast);
+  flex-shrink: 0;
+}
+
+.duo-error-retry-btn:hover {
+  background: rgba(255, 75, 75, 0.25);
+}
+
 /* === 3D 按钮 === */
 .duo-btn {
   display: inline-flex;
@@ -180,7 +198,9 @@
 .duo-check-btn:focus-visible,
 .duo-btn:focus-visible,
 .duo-meal-header:focus-visible,
-.duo-close-btn:focus-visible {
+.duo-close-btn:focus-visible,
+.duo-refresh-btn:focus-visible,
+.duo-error-retry-btn:focus-visible {
   outline: 2px solid var(--duo-green);
   outline-offset: 2px;
 }
@@ -255,6 +275,17 @@
 @keyframes duo-expand-grid {
   from { grid-template-rows: 0fr; }
   to { grid-template-rows: 1fr; }
+}
+
+@keyframes duo-panel-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes duo-check-shrink {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.8); }
+  100% { transform: scale(1); }
 }
 
 /* ========================================

@@ -9,16 +9,19 @@ interface ExerciseItemProps {
 export const ExerciseItem = memo(function ExerciseItem({ exercise, onToggle }: ExerciseItemProps) {
   const [animating, setAnimating] = useState(false);
   const [justChecked, setJustChecked] = useState(false);
+  const [unchecking, setUnchecking] = useState(false);
 
   const handleClick = useCallback(() => {
     if (!exercise.completed) {
       setJustChecked(true);
       setAnimating(true);
+    } else {
+      setUnchecking(true);
     }
     onToggle(exercise.id);
   }, [exercise.id, exercise.completed, onToggle]);
 
-  const handleAnimationEnd = useCallback(() => {
+  const handleAnimEnd = useCallback((_e: React.AnimationEvent) => {
     setAnimating(false);
   }, []);
 
@@ -26,10 +29,19 @@ export const ExerciseItem = memo(function ExerciseItem({ exercise, onToggle }: E
     setJustChecked(false);
   }, []);
 
+  const handleUncheckAnimEnd = useCallback((_e: React.AnimationEvent) => {
+    setUnchecking(false);
+  }, []);
+
   const catClass = `duo-cat-${exercise.category}` as const;
+  const itemClass = [
+    "duo-exercise-item",
+    animating ? "completing" : "",
+    unchecking ? "unchecking" : "",
+  ].filter(Boolean).join(" ");
 
   return (
-    <div className={`duo-exercise-item ${animating ? "completing" : ""}`}>
+    <div className={itemClass}>
       <div className={`duo-exercise-icon ${catClass}`}>
         <span aria-hidden="true">{exercise.icon}</span>
       </div>
@@ -50,10 +62,14 @@ export const ExerciseItem = memo(function ExerciseItem({ exercise, onToggle }: E
         </span>
       </div>
       <button
-        className={`duo-check-btn ${exercise.completed ? "checked" : ""} ${justChecked ? "pop draw-check" : ""}`}
+        className={`duo-check-btn ${exercise.completed ? "checked" : ""} ${justChecked ? "pop draw-check" : ""} ${unchecking ? "shrink" : ""}`}
         onClick={handleClick}
-        onAnimationEnd={handleAnimationEnd}
+        onAnimationEnd={(e) => {
+          handleAnimEnd(e);
+          handleUncheckAnimEnd(e);
+        }}
         aria-label={exercise.completed ? "标记为未完成" : "标记为完成"}
+        type="button"
       >
         {exercise.completed ? (
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">

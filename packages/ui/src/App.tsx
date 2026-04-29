@@ -139,6 +139,7 @@ function AppContent() {
             loading={fitTrack.loading}
             error={fitTrack.error}
             onCompleteExercise={(id, completed) => fitTrack.completeExercise(id, completed)}
+            onRefresh={() => fitTrack.refresh()}
             onClose={() => setShowFitTrack(false)}
           />
         ) : (

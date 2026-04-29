@@ -40,10 +40,10 @@ export const MealCard = memo(function MealCard({ meal, index }: MealCardProps) {
           <div className="duo-meal-detail-inner">
             <p className="duo-meal-desc">{meal.description}</p>
             <div className="duo-macro-inline">
-              <span className="duo-macro-chip" style={{ color: "var(--duo-purple)" }}>
+              <span className="duo-macro-chip duo-macro-protein">
                 <span aria-hidden="true">💪</span> {meal.protein}g 蛋白质
               </span>
-              <span className="duo-macro-chip" style={{ color: "var(--duo-gold)" }}>
+              <span className="duo-macro-chip duo-macro-calories">
                 <span aria-hidden="true">🔥</span> {meal.calories} kcal
               </span>
             </div>

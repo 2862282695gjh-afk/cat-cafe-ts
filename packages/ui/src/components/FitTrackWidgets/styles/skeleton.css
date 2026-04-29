@@ -84,3 +84,41 @@
   margin-left: auto;
   flex-shrink: 0;
 }
+
+/* === Skeleton 布局工具类 === */
+.duo-skeleton-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.duo-skeleton-badges {
+  display: flex;
+  gap: 8px;
+}
+
+.duo-skeleton-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.duo-skeleton-circle-sm {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.duo-skeleton-progress-short {
+  width: 70%;
+}
+
+.duo-skeleton-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}

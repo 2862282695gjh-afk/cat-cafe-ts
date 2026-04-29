@@ -192,6 +192,14 @@
   font-weight: 700;
 }
 
+.duo-macro-protein {
+  color: var(--duo-purple);
+}
+
+.duo-macro-calories {
+  color: var(--duo-gold);
+}
+
 /* === 补充剂建议 === */
 .duo-supplement-section {
   display: flex;

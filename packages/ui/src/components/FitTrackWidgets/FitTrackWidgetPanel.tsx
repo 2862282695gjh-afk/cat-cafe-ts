@@ -4,6 +4,16 @@ import { TrainingPlanCard } from "./TrainingPlanCard";
 import { NutritionAdviceCard } from "./NutritionAdviceCard";
 import { SkeletonScreen } from "./shared/SkeletonScreen";
 
+function hasNutritionContent(advice: NutritionAdvice): boolean {
+  return !!(
+    advice.proteinRecommendation ||
+    (advice.proteinSources && advice.proteinSources.length > 0) ||
+    advice.hydrationTips ||
+    (advice.mealSuggestions && advice.mealSuggestions.length > 0) ||
+    (advice.supplementRecommendations && advice.supplementRecommendations.length > 0)
+  );
+}
+
 interface FitTrackWidgetPanelProps {
   trainingPlan?: TrainingPlan;
   nutritionAdvice?: NutritionAdvice;
@@ -11,6 +21,7 @@ interface FitTrackWidgetPanelProps {
   error?: string | null;
   onCompleteExercise?: (exerciseId: string, completed: boolean) => void;
   onStartWorkout?: () => void;
+  onRefresh?: () => void;
   onClose?: () => void;
 }
 
@@ -21,6 +32,7 @@ export function FitTrackWidgetPanel({
   error = null,
   onCompleteExercise,
   onStartWorkout,
+  onRefresh,
   onClose,
 }: FitTrackWidgetPanelProps) {
   return (
@@ -33,11 +45,27 @@ export function FitTrackWidgetPanel({
             <p className="duo-panel-subtitle">今日健康面板</p>
           </div>
         </div>
-        {onClose && (
-          <button className="duo-close-btn" onClick={onClose} aria-label="关闭面板">
-            ✕
-          </button>
-        )}
+        <div className="duo-panel-actions">
+          {onRefresh && (
+            <button
+              className="duo-refresh-btn"
+              onClick={onRefresh}
+              aria-label="刷新数据"
+              type="button"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10" />
+                <polyline points="1 20 1 14 7 14" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+              </svg>
+            </button>
+          )}
+          {onClose && (
+            <button className="duo-close-btn" onClick={onClose} aria-label="关闭面板" type="button">
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="duo-panel-content">
@@ -45,6 +73,15 @@ export function FitTrackWidgetPanel({
           <div className="duo-error-banner">
             <span aria-hidden="true">⚠️</span>
             <span>{error}</span>
+            {onRefresh && (
+              <button
+                className="duo-error-retry-btn"
+                onClick={onRefresh}
+                type="button"
+              >
+                重试
+              </button>
+            )}
           </div>
         )}
 
@@ -57,7 +94,7 @@ export function FitTrackWidgetPanel({
               onComplete={onCompleteExercise}
               onStartWorkout={onStartWorkout}
             />
-            {nutritionAdvice.mealSuggestions.length > 0 && (
+            {hasNutritionContent(nutritionAdvice) && (
               <NutritionAdviceCard advice={nutritionAdvice} />
             )}
           </>
