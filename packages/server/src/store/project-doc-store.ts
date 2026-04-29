@@ -67,11 +67,6 @@ export class ProjectDocStore {
 
     const template = `# 项目：${title || "新项目"}
 
-## 项目范围
-
-> 工作目录：${process.cwd()}
-> 你只能操作当前项目目录内的文件。不要引用、不要 review、不要要求修改其他项目的文件。
-
 ## 代码结构
 
 > 待补充
