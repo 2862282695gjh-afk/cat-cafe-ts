@@ -390,8 +390,15 @@ async function invokeWithA2A(
         let finalText = agentText.get(agentId) ?? "";
         const logs = agentLogs.get(agentId);
 
+        // 更新 token 状态（用于下次事前检查）— 即使 PASS 也需要记录消耗
+        ctx.sessionManager.updateState(agentId, re);
+        // 注册新 session 到 chain（如果是首次或封印后）
+        if (re.session_id) {
+          ctx.sessionManager.registerNewSession(agentId, threadId, re.session_id);
+        }
+
         // 检测 PASS：猫判断无需回复，跳过保存和展示
-        const isPass = /^\s*PASS\s*$/i.test(finalText.trim());
+        const isPass = /^PASS$/i.test(finalText.trim());
         if (isPass) {
           console.log(`[WS] agent ${agentConfigs[agentId]?.name ?? agentId} PASS（无需回复）`);
           agentStatus.set(agentId, { status: "idle", message: "等待召唤", pendingCount: ctx.taskQueue.getPendingCount(agentId) });
@@ -420,13 +427,6 @@ async function invokeWithA2A(
         ctx.io.to(threadId).emit("event", { type: "complete", threadId, agentId, response: finalText });
         agentStatus.set(agentId, { status: "idle", message: "等待召唤", pendingCount: ctx.taskQueue.getPendingCount(agentId) });
         ctx.io.emit("agent-status-update", { agentId, status: "idle", message: "等待召唤" });
-
-        // 更新 token 状态（用于下次事前检查）
-        ctx.sessionManager.updateState(agentId, re);
-        // 注册新 session 到 chain（如果是首次或封印后）
-        if (re.session_id) {
-          ctx.sessionManager.registerNewSession(agentId, threadId, re.session_id);
-        }
 
         ctx.memoryExtractor.maybeExtract(agentId, message, finalText).catch(() => {});
 
