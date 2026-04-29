@@ -7,6 +7,12 @@ import type { AgentConfig } from "./store/interface.js";
 
 export const pool = new AgentPool();
 
+// ========== A2A 通信限制 ==========
+/** 同一对 agent 之间最多 N 轮（防止来回甩锅） */
+export const MAX_A2A_DEPTH = 3;
+/** 整条 A2A 链最多 N 跳（防止无限传播） */
+export const MAX_A2A_CHAIN = 8;
+
 // ========== Agent 配置 ==========
 
 export const agentConfigs: Record<string, AgentConfig & { model?: string }> = {

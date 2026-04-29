@@ -46,9 +46,14 @@ export class SessionManager {
   /** 更新 session token 状态（从 result 事件中提取） */
   updateState(agentId: string, result: ResultEvent): void {
     const usage = result.usage;
-    const totalInput = usage.input_tokens
+    const rawTotal = usage.input_tokens
       + (usage.cache_read_input_tokens ?? 0)
       + (usage.cache_creation_input_tokens ?? 0);
+
+    // result.usage 是整个请求内所有 API 调用的累积值（含多次 tool use 迭代）
+    // 除以 numTurns 得到单次 API 调用的平均值，更接近实际上下文大小
+    const numTurns = Math.max(result.num_turns, 1);
+    const totalInput = Math.round(rawTotal / numTurns);
 
     let contextWindow = 200_000;
     if (result.modelUsage) {
@@ -62,10 +67,7 @@ export class SessionManager {
 
     console.log(
       `[SessionChain] agent ${agentConfigs[agentId]?.name ?? agentId} usage:`,
-      `input=${usage.input_tokens}, cache_read=${usage.cache_read_input_tokens ?? 0}, cache_create=${usage.cache_creation_input_tokens ?? 0}, output=${usage.output_tokens}`,
-      `| totalInput=${totalInput}, contextWindow=${contextWindow}, ratio=${((totalInput / contextWindow) * 100).toFixed(1)}%`,
-      `| modelUsage=${result.modelUsage ? JSON.stringify(result.modelUsage) : "null"}`,
-      `| numTurns=${result.num_turns}`,
+      `raw=${rawTotal}, numTurns=${numTurns}, estimated=${totalInput}, contextWindow=${contextWindow}, ratio=${((totalInput / contextWindow) * 100).toFixed(1)}%`,
     );
 
     this.states.set(agentId, {
@@ -167,9 +169,14 @@ export class SessionManager {
     return parts.join("\n");
   }
 
-  /** 记录新 session 到 chain */
+  /** 记录新 session 到 chain（跳过已注册的 sessionId） */
   registerNewSession(agentId: string, threadId: string, sessionId: string): void {
     const chain = loadChain(threadId, agentId);
+
+    // 去重：如果最后一个 active session 已经是这个 ID，跳过
+    const lastActive = [...chain].reverse().find((r) => r.status === "active");
+    if (lastActive && lastActive.sessionId === sessionId) return;
+
     chain.push({
       sessionId,
       generation: chain.length + 1,

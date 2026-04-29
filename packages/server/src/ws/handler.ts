@@ -9,7 +9,7 @@
  */
 import type { Server as HTTPServer } from "node:http";
 import { Server } from "socket.io";
-import { pool, agentStatus, agentConfigs } from "../pool.js";
+import { pool, agentStatus, agentConfigs, MAX_A2A_DEPTH, MAX_A2A_CHAIN } from "../pool.js";
 import { MemoryStore } from "../store/memory.js";
 import type { AssistantEvent, ResultEvent } from "@cat-noodle/core";
 import type { SessionManager } from "../session-manager.js";
@@ -437,8 +437,12 @@ async function invokeWithA2A(
             if (signal.aborted) break;
             const newChain = [...callChain, targetId];
             const pairDepth = computePairDepth(callChain, agentId, targetId);
-            if (pairDepth > 15) {
+            if (pairDepth > MAX_A2A_DEPTH) {
               console.log(`[WS] A2A pair depth ${pairDepth} 超限: ${agentConfigs[agentId]?.name} ↔ ${agentConfigs[targetId]?.name}`);
+              continue;
+            }
+            if (newChain.length > MAX_A2A_CHAIN) {
+              console.log(`[WS] A2A chain length ${newChain.length} 超限: ${newChain.join("→")}`);
               continue;
             }
             console.log(`[WS] A2A enqueue: ${agentConfigs[agentId]?.name} → ${agentConfigs[targetId]?.name}, pairDepth=${pairDepth}, chain=${newChain.join("→")}`);

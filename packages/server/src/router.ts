@@ -4,9 +4,8 @@
  * 用户可以用 @佐佐木 指定 agent，不指定则广播给所有猫。
  * Agent 回复中如果包含 @mention，自动触发 A2A 调用链。
  */
-import { pool, agentConfigs, agentStatus } from "./pool.js";
+import { pool, agentConfigs, agentStatus, MAX_A2A_DEPTH } from "./pool.js";
 
-const MAX_A2A_DEPTH = 15;
 const MAX_A2A_PER_RESPONSE = 2;
 
 /** 中文/ID 名称 → agent ID 的映射 */
