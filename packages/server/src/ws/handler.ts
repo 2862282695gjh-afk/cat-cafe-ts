@@ -58,6 +58,7 @@ interface AgentTask {
   callerId: string | null;
   depth: number;            // 同一对 agent 之间的来回次数
   callChain: string[];      // A2A 调用链（agentId 列表），用于计算 pair depth
+  broadcastRecipients?: string[];  // 广播时所有收到的 agent 列表，用于去重
 }
 
 class AgentTaskQueue {
@@ -179,12 +180,14 @@ export function setupWebSocket(io: Server, store: MemoryStore, sessionManager: S
       if (!ctx.abortControllers.has(threadId)) ctx.abortControllers.set(threadId, []);
       ctx.abortControllers.get(threadId)!.push(controller);
 
+      const isBroadcast = targetAgents.length > 1;
       for (const agentId of targetAgents) {
         ctx.taskQueue.enqueue(agentId, {
           id: `task-${Date.now()}-${agentId}`,
           fromAgentId: null, fromAgentName: "用户",
           message: cleanMessage, status: "pending", enqueuedAt: Date.now(),
           threadId, callerId: null, depth: 1, callChain: [agentId],
+          broadcastRecipients: isBroadcast ? targetAgents : undefined,
         });
       }
       broadcastTaskQueue();
@@ -266,7 +269,7 @@ async function drainAgentQueue(
     broadcastTaskQueue();
 
     try {
-      await invokeWithA2A(ctx, task.threadId, agentId, task.message, task.callerId, signal, task.depth, task.callChain, broadcastTaskQueue);
+      await invokeWithA2A(ctx, task.threadId, agentId, task.message, task.callerId, signal, task.depth, task.callChain, broadcastTaskQueue, task.broadcastRecipients);
     } finally {
       ctx.taskQueue.markDone(agentId);
       broadcastTaskQueue();
@@ -281,6 +284,7 @@ async function invokeWithA2A(
   message: string, callerId: string | null,
   signal: AbortSignal, depth: number, callChain: string[],
   broadcastTaskQueue: () => void,
+  broadcastRecipients?: string[],
 ): Promise<void> {
   if (signal.aborted) return;
   // depth 由入队时按 pair 计算，此处不再检查
@@ -401,6 +405,7 @@ async function invokeWithA2A(
         const isPass = /^PASS$/i.test(finalText.trim());
         if (isPass) {
           console.log(`[WS] agent ${agentConfigs[agentId]?.name ?? agentId} PASS（无需回复）`);
+          ctx.io.to(threadId).emit("event", { type: "complete", threadId, agentId, response: "" });
           agentStatus.set(agentId, { status: "idle", message: "等待召唤", pendingCount: ctx.taskQueue.getPendingCount(agentId) });
           ctx.io.emit("agent-status-update", { agentId, status: "idle", message: "等待召唤" });
           broadcastTaskQueue();
@@ -435,6 +440,13 @@ async function invokeWithA2A(
         if (mentions.length > 0) {
           for (const targetId of mentions.slice(0, 3)) {
             if (signal.aborted) break;
+
+            // 广播去重：如果目标 agent 本来就收到了同一条广播，跳过 A2A
+            if (broadcastRecipients && broadcastRecipients.includes(targetId)) {
+              console.log(`[WS] A2A 跳过: ${agentConfigs[targetId]?.name} 已在广播列表中`);
+              continue;
+            }
+
             const newChain = [...callChain, targetId];
             const pairDepth = computePairDepth(callChain, agentId, targetId);
             if (pairDepth > MAX_A2A_DEPTH) {
