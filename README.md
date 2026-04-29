@@ -1,6 +1,142 @@
 # Cat Noodle TS
 
-多 Agent 协作聊天系统，灵感来自动漫《赤猫拉面馆》（ラーメン赤貓）。四个 AI Agent 扮演拉面馆店员，通过 @mention 路由和 A2A（Agent-to-Agent）通信协作完成用户任务。
+多 Agent 对等协作框架，灵感来自动漫《赤猫拉面馆》。Agent 之间通过 @mention 自由路由、A2A 直连通信、独立任务队列并行协作。
+
+## 解决的痛点
+
+现有 Multi-Agent 框架（AutoGen、CrewAI、Claude Code Agent Team 等）普遍存在三个问题：
+
+**1. 通信拓扑单一 — Agent 之间不能直接对话**
+大多数框架采用主从式（Master-Worker）架构，子 Agent 完成任务后只能向主 Agent 汇报，子 Agent 之间无法直接协作。例如前端做完 UI 后想叫后端对接 API，必须绕回主 Agent 中转，增加延迟和 token 消耗。
+
+**2. Agent 无持久身份 — 每次都是新面孔**
+子 Agent 通常是一次性的进程，用完即销毁。没有独立 session，不记得上次做了什么，每次启动都要重新读代码了解项目上下文，浪费大量 token。
+
+**3. 角色边界靠 prompt — 没有系统级约束**
+Agent 的职责分工完全依赖 system prompt 的文字描述，没有技术手段阻止越权。PM 角色的 Agent 随时可能自己动手写代码，违反分工原则。
+
+Cat Noodle TS 针对这三个痛点，设计了 @mention 对等路由 + 持久 session + 系统级角色约束的解决方案。
+
+## 与其他 Multi-Agent 模式的对比
+
+### 主从式（Master-Worker）
+
+AutoGen、MetaGPT 等框架采用的模式：
+
+```
+用户 → 主 Agent（调度者）
+        ├─ 子 Agent A → 结果返回主 Agent
+        ├─ 子 Agent B → 结果返回主 Agent
+        └─ 子 Agent C → 结果返回主 Agent
+```
+
+- 子 Agent 之间**不能直接通信**，所有协作必须经主 Agent 中转
+- 子 Agent **没有独立任务队列**，由主 Agent 直接 spawn
+- 主 Agent 是**单点瓶颈**——所有信息都经过它，token 消耗翻倍
+
+### Swarms 式（群体协作）
+
+OpenAI Swarms 等框架尝试让 Agent 群体平等协作：
+
+```
+Agent A ←→ Agent B ←→ Agent C
+  ↑           ↑           ↑
+  └───────────┴───────────┘
+        共享黑板/消息总线
+```
+
+- Agent 通过共享状态（黑板模式）间接通信
+- 缺乏明确的**任务路由机制**——谁该做什么靠 Agent 自己判断
+- 容易出现**重复工作**或**互相等待**的死锁
+
+### Claude Code Agent Team
+
+Claude Code 内置的多 Agent 能力：
+
+```
+用户 → 主 Agent
+        ├─ Agent tool A（子进程）→ 返回文本结果
+        ├─ Agent tool B（子进程）→ 返回文本结果
+        └─ Agent tool C（子进程）→ 返回文本结果
+```
+
+- 子 Agent 是**一次性**的，没有 session 持久化
+- 子 Agent 之间**不能直接通信**
+- 没有**Web UI**，只能在 CLI 中使用
+- 没有**任务队列**，主 Agent 直接 spawn 子进程
+- 角色约束**仅靠 prompt**，无系统级强制
+
+### Cat Noodle TS — @mention 对等网络
+
+```
+用户 → 社珠子（PM）
+        ↓ @文藏 @佐佐木（并行执行）
+        ├─ 文藏 → 完成后 @社珠子 汇报 → @小花 review
+        └─ 佐佐木 → 完成后 @社珠子 汇报     ↑
+                    ↓ @小花 review ────────────┘
+                    小花 → @社珠子 汇报结果
+```
+
+| 维度 | 主从式 | Swarms | Claude Agent Team | Cat Noodle |
+|------|--------|--------|-------------------|------------|
+| 通信拓扑 | 星形（中心转发） | 网状（共享状态） | 星形（父子进程） | **对等网络（@mention 直连）** |
+| A2A 通信 | 不支持 | 间接（黑板） | 不支持 | **支持（任意 Agent 互相 @）** |
+| Agent 身份 | 无（匿名子进程） | 无 | 无（一次性） | **持久 session + 独立记忆** |
+| 任务队列 | 无（直接 spawn） | 无 | 无（直接 spawn） | **每 Agent 独立队列，串行执行** |
+| 并行能力 | 顶层并行 | 全部并行 | 顶层并行 | **顶层并行 + 队列内串行** |
+| 角色约束 | 仅 prompt | 仅 prompt | 仅 prompt | **系统级强制（禁用 tool）** |
+| 可观测性 | CLI 文本 | CLI 文本 | CLI 文本 | **Web UI 实时面板** |
+| 上下文持久化 | 无 | 无 | 无 | **ProjectDocStore 跨 session** |
+
+## 核心设计
+
+### 1. @mention 对等路由
+
+Agent 回复中的 `@其他Agent名` 自动触发 A2A 调用链：
+
+```
+社珠子: "好的。@文藏 请实现登录 API。@佐佐木 请实现登录页面。"
+         ↓                        ↓
+      文藏收到任务            佐佐木收到任务（并行）
+```
+
+- 支持**中文名**和**英文 ID**（`@文藏` = `@bunzo`）
+- Per-pair 深度限制：同一对 Agent 来回不超过 15 次，新 Agent 加入时重置
+- 每条回复最多触发 3 个 A2A 调用，防止失控
+
+### 2. 独立任务队列
+
+每个 Agent 维护独立的串行任务队列：
+
+```
+文藏的队列: [任务1(执行中), 任务2(等待), 任务3(等待)]
+佐佐木的队列: [任务A(执行中)]   ← 和文藏互不阻塞
+```
+
+- **顶层并行**：社珠子 @文藏 @佐佐木 → 两人同时开始
+- **队列内串行**：文藏同时收到 3 个任务，按顺序逐个执行
+- Web UI 实时显示每个 Agent 的当前任务和等待队列
+
+### 3. 系统级角色约束
+
+社珠子（PM）通过 `planMode: true` 禁用所有工具：
+
+```typescript
+pool.register("tamako", new ClaudeProcess({
+  systemPrompt: "...",
+  planMode: true,  // 等价于 --tools ""，禁用所有工具
+}));
+```
+
+配合每次调用的提醒前缀和 A2A prompt 的汇报措辞，三重保障确保 PM 只做委派不做执行。
+
+### 4. ProjectDocStore — 跨 Session 上下文
+
+每个对话线程维护一份 `project.md`，记录代码结构、变更历史、任务进度：
+
+- Agent 执行前自动注入项目文档作为上下文
+- Agent 完成后通过 `<<<PROJECT-DOC-UPDATE>>>` 块自动更新
+- 服务器重启后通过 `--resume` 恢复 session，配合项目文档快速恢复工作状态
 
 ## 功能截图
 

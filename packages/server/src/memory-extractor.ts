@@ -7,8 +7,14 @@
 import { ClaudeProcess } from "@cat-noodle/provider-claude";
 import { FileMemoryStore, type AgentLongMemory } from "./store/file-memory.js";
 
+interface Turn {
+  user: string;
+  assistant: string;
+}
+
 export class MemoryExtractor {
   private turnCounters = new Map<string, number>();
+  private turnBuffers = new Map<string, Turn[]>();
   private interval: number;
   private memoryStore: FileMemoryStore;
 
@@ -18,7 +24,7 @@ export class MemoryExtractor {
   }
 
   /**
-   * 每次 result 后调用，累计轮次，达到 N 轮时触发提取并自动保存
+   * 每次 result 后调用，累计轮次，达到 N 轮时用最近 N 轮对话触发提取并自动保存
    */
   async maybeExtract(
     agentId: string,
@@ -28,32 +34,45 @@ export class MemoryExtractor {
     const count = (this.turnCounters.get(agentId) ?? 0) + 1;
     this.turnCounters.set(agentId, count);
 
+    // 缓冲最近 N 轮对话
+    const buffer = this.turnBuffers.get(agentId) ?? [];
+    buffer.push({ user: userMessage, assistant: assistantReply });
+    if (buffer.length > this.interval) buffer.shift();
+    this.turnBuffers.set(agentId, buffer);
+
     if (count % this.interval !== 0) return;
 
     // 提取并自动保存到文件
-    const patch = await this.extract(agentId, userMessage, assistantReply);
+    const patch = await this.extract(agentId, buffer);
     if (patch) {
       await this.memoryStore.updateMemory(agentId, patch);
     }
   }
 
-  /** 用子 agent 提取记忆 */
+  /** 用子 agent 从最近 N 轮对话中提取记忆 */
   private async extract(
     agentId: string,
-    userMessage: string,
-    assistantReply: string,
+    turns: Turn[],
   ): Promise<Partial<AgentLongMemory> | null> {
     const existingMemory = await this.memoryStore.getMemory(agentId);
     const existingContext = existingMemory.keyFacts.length > 0
       ? `\n\n已有记忆：${existingMemory.keyFacts.join("; ")}`
       : "";
 
-    const prompt = `分析以下对话，提取需要长期记住的信息。
+    const maxChars = 500;
+    const conversation = turns
+      .map((t, i) => {
+        const u = t.user.length > maxChars ? t.user.slice(0, maxChars) + "…" : t.user;
+        const a = t.assistant.length > maxChars ? t.assistant.slice(0, maxChars) + "…" : t.assistant;
+        return `[第 ${i + 1} 轮]\n用户消息：${u}\n助手回复：${a}`;
+      })
+      .join("\n\n");
+
+    const prompt = `分析以下 ${turns.length} 轮对话，提取需要长期记住的信息。
 
 ${existingContext}
 
-用户消息：${userMessage}
-助手回复：${assistantReply}
+${conversation}
 
 请严格按以下 JSON 格式返回（不要包含其他内容）：
 {

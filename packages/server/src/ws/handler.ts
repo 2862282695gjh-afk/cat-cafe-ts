@@ -2,8 +2,8 @@
  * Socket.IO 事件处理
  *
  * 路由模式：
- *   - 默认发给社珠子（tamako），她可以 @其他猫咪 来委派任务（A2A）
- *   - 用户可以 @佐佐木 / @文藏 / @小花 指定 agent
+ *   - 默认广播给所有猫，用户可以 @佐佐木 / @文藏 / @小花 指定 agent
+ *   - 猫之间可以通过 @mention 对等协作（A2A）
  *   - A2A 调用有深度限制，防止无限循环
  *   - 顶层多 agent 并行，同一 agent 内任务串行排队
  */
@@ -17,6 +17,7 @@ import type { MemoryExtractor } from "../memory-extractor.js";
 import { saveSessionId, getSessionId } from "../store/session-store.js";
 import { route, parseAgentMentions, buildA2APrompt } from "../router.js";
 import { ProjectDocStore } from "../store/project-doc-store.js";
+import type { FileMemoryStore } from "../store/file-memory.js";
 
 interface InvokePayload {
   threadId: string;
@@ -112,6 +113,7 @@ interface WsContext {
   store: MemoryStore;
   sessionManager: SessionManager;
   memoryExtractor: MemoryExtractor;
+  memoryStore: FileMemoryStore;
   taskQueue: AgentTaskQueue;
   abortControllers: Map<string, AbortController[]>;
   projectDocStore: ProjectDocStore;
@@ -119,8 +121,8 @@ interface WsContext {
 
 // ========== WebSocket Setup ==========
 
-export function setupWebSocket(io: Server, store: MemoryStore, sessionManager: SessionManager, memoryExtractor: MemoryExtractor, projectDocStore: ProjectDocStore) {
-  const ctx: WsContext = { io, store, sessionManager, memoryExtractor, taskQueue: new AgentTaskQueue(), abortControllers: new Map(), projectDocStore };
+export function setupWebSocket(io: Server, store: MemoryStore, sessionManager: SessionManager, memoryExtractor: MemoryExtractor, memoryStore: FileMemoryStore, projectDocStore: ProjectDocStore) {
+  const ctx: WsContext = { io, store, sessionManager, memoryExtractor, memoryStore, taskQueue: new AgentTaskQueue(), abortControllers: new Map(), projectDocStore };
 
   function broadcastTaskQueue() {
     const snapshot = ctx.taskQueue.getSnapshot();
@@ -225,15 +227,20 @@ export function setupWebSocket(io: Server, store: MemoryStore, sessionManager: S
       if (!ctx.abortControllers.has(threadId)) ctx.abortControllers.set(threadId, []);
       ctx.abortControllers.get(threadId)!.push(controller);
 
-      ctx.taskQueue.enqueue("tamako", {
-        id: `task-${Date.now()}-resume`, fromAgentId: null, fromAgentName: "用户",
-        message: resumeMsg, status: "pending", enqueuedAt: Date.now(),
-        threadId, callerId: null, depth: 1, callChain: ["tamako"],
-      });
+      // 恢复会话时广播给所有猫
+      for (const agentId of Object.keys(agentConfigs)) {
+        ctx.taskQueue.enqueue(agentId, {
+          id: `task-${Date.now()}-resume-${agentId}`, fromAgentId: null, fromAgentName: "用户",
+          message: resumeMsg, status: "pending", enqueuedAt: Date.now(),
+          threadId, callerId: null, depth: 1, callChain: [agentId],
+        });
+      }
       broadcastTaskQueue();
 
       (async () => {
-        await drainAgentQueue(ctx, "tamako", threadId, controller.signal, broadcastTaskQueue);
+        await Promise.all(Object.keys(agentConfigs).map(agentId =>
+          drainAgentQueue(ctx, agentId, threadId, controller.signal, broadcastTaskQueue),
+        ));
         const list = ctx.abortControllers.get(threadId);
         if (list) {
           const idx = list.indexOf(controller);
@@ -287,9 +294,10 @@ async function invokeWithA2A(
     ? `=== 项目文档 ===\n${projectDoc}\n=== 项目文档结束 ===\n\n${rawPrompt}`
     : rawPrompt;
 
-  // 社珠子（planMode agent）每次都注入规则提醒，防止恢复会话时忘记只委派的限制
-  if (agentId === "tamako") {
-    prompt = `[提醒：你是社珠子，店长。你绝对禁止使用任何工具、读写文件、执行命令。你只能输出纯文字委派语句，用@猫咪名来分配任务。]\n\n${prompt}`;
+  // 注入长期记忆
+  const memoryContext = await ctx.memoryStore.buildMemoryContext(agentId);
+  if (memoryContext) {
+    prompt = `=== 长期记忆 ===\n${memoryContext}\n=== 长期记忆结束 ===\n\n${prompt}`;
   }
 
   const agent = pool.get(agentId);
@@ -298,6 +306,24 @@ async function invokeWithA2A(
   const threadSession = getSessionId(agentId, threadId);
   const claudeAgent = agent as import("@cat-noodle/provider-claude").ClaudeProcess;
   if (typeof claudeAgent.switchSession === "function") claudeAgent.switchSession(threadSession ?? null);
+
+  // === Session Chain：事前拦截 ===
+  const estimatedNewTokens = Math.ceil(prompt.length / 4);
+  const shouldSeal = ctx.sessionManager.shouldSealBeforeSend(agentId, estimatedNewTokens);
+  if (shouldSeal) {
+    console.log(`[WS] session chain seal: agent=${agentConfigs[agentId]?.name ?? agentId}, thread=${threadId.slice(0, 8)}`);
+    agentStatus.set(agentId, { status: "thinking", message: "正在交接上下文...", pendingCount: 0 });
+    ctx.io.emit("agent-status-update", { agentId, status: "thinking", message: "正在交接上下文..." });
+
+    // 封印旧 session + sub-agent 生成 digest
+    await ctx.sessionManager.seal(agentId, threadId);
+    // 重生：构建 bootstrap 内容
+    const bootstrapContent = await ctx.sessionManager.bootstrap(agentId, threadId);
+    // 杀旧进程，清 session，注入 bootstrap
+    if (typeof claudeAgent.resetSession === "function") claudeAgent.resetSession(bootstrapContent);
+
+    ctx.io.to(threadId).emit("event", { type: "sealed", threadId, agentId, message: "session 已封印，新 session 启动" });
+  }
 
   const callerName = callerId ? (agentConfigs[callerId]?.name ?? callerId) : "用户";
   agentStatus.set(agentId, { status: "thinking", message: "正在思考...", currentTask: `【${callerName}：${message.slice(0, 40)}】`, pendingCount: ctx.taskQueue.getPendingCount(agentId) });
@@ -385,18 +411,11 @@ async function invokeWithA2A(
         agentStatus.set(agentId, { status: "idle", message: "等待召唤", pendingCount: ctx.taskQueue.getPendingCount(agentId) });
         ctx.io.emit("agent-status-update", { agentId, status: "idle", message: "等待召唤" });
 
-        // 上下文压缩
-        const decision = ctx.sessionManager.checkAndCompact(agentId, re);
-        if (decision.shouldCompact) {
-          const oldSessionId = ctx.sessionManager.getSessionId(agentId);
-          if (oldSessionId) {
-            ctx.sessionManager.compact(agentId, oldSessionId, (summary: string) => {
-              const a = pool.get(agentId) as { resetSession?: (s: string) => void } | undefined;
-              a?.resetSession?.(summary);
-            }).then((result) => {
-              ctx.io.to(threadId).emit("event", { type: "compacted", threadId, agentId, tokensSaved: result.tokensSaved, message: `上下文已压缩，节省 ~${result.tokensSaved} tokens` });
-            }).catch((err) => console.error(`[WS] 压缩失败 agent=${agentId}:`, err));
-          }
+        // 更新 token 状态（用于下次事前检查）
+        ctx.sessionManager.updateState(agentId, re);
+        // 注册新 session 到 chain（如果是首次或封印后）
+        if (re.session_id) {
+          ctx.sessionManager.registerNewSession(agentId, threadId, re.session_id);
         }
 
         ctx.memoryExtractor.maybeExtract(agentId, message, finalText).catch(() => {});
@@ -404,7 +423,7 @@ async function invokeWithA2A(
         // === A2A: 入队，不直接调用 ===
         const mentions = parseAgentMentions(finalText, agentId);
         if (mentions.length > 0) {
-          for (const targetId of mentions.slice(0, 2)) {
+          for (const targetId of mentions.slice(0, 3)) {
             if (signal.aborted) break;
             const newChain = [...callChain, targetId];
             const pairDepth = computePairDepth(callChain, agentId, targetId);
@@ -431,7 +450,7 @@ async function invokeWithA2A(
           broadcastTaskQueue();
 
           // 并行触发各目标的队列消费
-          Promise.all(mentions.slice(0, 2).map(targetId => drainAgentQueue(ctx, targetId, threadId, signal, broadcastTaskQueue))).catch(() => {});
+          Promise.all(mentions.slice(0, 3).map(targetId => drainAgentQueue(ctx, targetId, threadId, signal, broadcastTaskQueue))).catch(() => {});
         }
 
       } else if (event.type === "error") {

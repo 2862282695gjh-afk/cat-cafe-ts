@@ -65,7 +65,7 @@ export class JsonFileStore implements Store {
     }
 
     // 加载长期记忆
-    for (const agentId of ["tamako", "sasaki", "bunzo", "kohana"]) {
+    for (const agentId of ["sasaki", "bunzo", "kohana"]) {
       const memPath = path.join(MEMORY_DIR, `${agentId}.json`);
       const mem = readJSON<Record<string, string>>(memPath, {});
       if (Object.keys(mem).length > 0) {

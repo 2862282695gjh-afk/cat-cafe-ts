@@ -30,7 +30,7 @@ async function main() {
     pingTimeout: 20000,
   });
 
-  setupWebSocket(socketServer, store, sessionManager, memoryExtractor, projectDocStore);
+  setupWebSocket(socketServer, store, sessionManager, memoryExtractor, fileMemory, projectDocStore);
 
   app.listen({ port: PORT, host: "0.0.0.0" }, (err, address) => {
     if (err) {
