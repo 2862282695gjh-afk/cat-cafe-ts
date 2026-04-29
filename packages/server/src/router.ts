@@ -127,7 +127,9 @@ export function buildA2APrompt(
 
   return `${callerName} 给你分配了一个任务，请直接执行：
 
-${taskInstruction}`;
+${taskInstruction}
+
+注意：只处理当前项目目录内的文件。如果任务涉及不存在的文件或超出你的职责范围，回复 PASS。`;
 }
 
 /** 获取 agent 的路由信息 */
