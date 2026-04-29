@@ -15,6 +15,7 @@ import { homedir } from "node:os";
 import type { ResultEvent } from "@cat-noodle/core";
 import { ClaudeProcess } from "@cat-noodle/provider-claude";
 import { FileMemoryStore } from "./store/file-memory.js";
+import { agentConfigs } from "./pool.js";
 import { loadChain, saveChain, getActiveSessionRecord, type SessionRecord } from "./store/session-store.js";
 
 // ========== 类型 ==========
@@ -58,6 +59,14 @@ export class SessionManager {
         }
       }
     }
+
+    console.log(
+      `[SessionChain] agent ${agentConfigs[agentId]?.name ?? agentId} usage:`,
+      `input=${usage.input_tokens}, cache_read=${usage.cache_read_input_tokens ?? 0}, cache_create=${usage.cache_creation_input_tokens ?? 0}, output=${usage.output_tokens}`,
+      `| totalInput=${totalInput}, contextWindow=${contextWindow}, ratio=${((totalInput / contextWindow) * 100).toFixed(1)}%`,
+      `| modelUsage=${result.modelUsage ? JSON.stringify(result.modelUsage) : "null"}`,
+      `| numTurns=${result.num_turns}`,
+    );
 
     this.states.set(agentId, {
       sessionId: result.session_id,
