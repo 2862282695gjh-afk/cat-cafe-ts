@@ -9,7 +9,7 @@
  */
 import type { Server as HTTPServer } from "node:http";
 import { Server } from "socket.io";
-import { pool, agentStatus, agentConfigs, MAX_A2A_DEPTH, MAX_A2A_CHAIN } from "../pool.js";
+import { pool, agentStatus, agentConfigs, MAX_A2A_CHAIN } from "../pool.js";
 import type { Store } from "../store/interface.js";
 import type { AssistantEvent, ResultEvent } from "@cat-noodle/core";
 import type { SessionManager } from "../session-manager.js";
@@ -30,21 +30,6 @@ interface AbortPayload {
 }
 
 /** 计算 agent pair depth：同一对 agent 之间连续来回的次数 */
-function computePairDepth(chain: string[], callerId: string, targetId: string): number {
-  const pairKey = [callerId, targetId].sort().join("↔");
-  let depth = 1;
-  // 从链尾往前看，数连续的同 pair 跳转
-  for (let i = chain.length - 1; i >= 1; i--) {
-    const hopPair = [chain[i - 1], chain[i]].sort().join("↔");
-    if (hopPair === pairKey) {
-      depth++;
-    } else {
-      break;
-    }
-  }
-  return depth;
-}
-
 // ========== Agent 任务队列 ==========
 
 interface AgentTask {
@@ -290,12 +275,29 @@ async function invokeWithA2A(
   // depth 由入队时按 pair 计算，此处不再检查
 
   const isA2A = callerId !== null;
-  const rawPrompt = isA2A ? buildA2APrompt(callerId, agentId, message) : message;
+  let rawPrompt = isA2A ? buildA2APrompt(callerId, agentId, message) : message;
 
-  // 注入项目文档
-  const projectDoc = await ctx.projectDocStore.getDoc(threadId);
-  let prompt = projectDoc
-    ? `=== 项目文档 ===\n${projectDoc}\n=== 项目文档结束 ===\n\n${rawPrompt}`
+  // 注入广播顺序（让 agent 知道自己的出场位置）
+  if (broadcastRecipients && broadcastRecipients.length > 1) {
+    const myIndex = broadcastRecipients.indexOf(agentId);
+    if (myIndex >= 0) {
+      const total = broadcastRecipients.length;
+      const orderNames = broadcastRecipients.map((id, i) => `${i + 1}. ${agentConfigs[id]?.name ?? id}`).join("、");
+      const nextAgent = myIndex + 1 < total ? broadcastRecipients[myIndex + 1] : null;
+      const nextName = nextAgent ? agentConfigs[nextAgent]?.name ?? nextAgent : null;
+      rawPrompt = `[广播顺序] 你是第 ${myIndex + 1} 位回复（共 ${total} 位：${orderNames}）。
+- 如果是顺序互动（如游戏、接龙），你${myIndex === 0 ? "先回复，然后在末尾 @ 下一位继续" : `应该 PASS，等第 ${myIndex + 1} 位被 @ 时再回复`}。
+- 如果是并行工作（如分工任务），所有人同时回复，不按顺序。
+${nextName ? `- 你回复后需要接力的话，@${nextName}。` : ""}
+
+${rawPrompt}`;
+    }
+  }
+
+  // 注入项目文档（智能提取：索引 + agent 相关章节 + 最近 log）
+  const projectContext = await ctx.projectDocStore.getRelevantContext(threadId, agentId);
+  let prompt = projectContext
+    ? `=== 项目文档 ===\n${projectContext}\n=== 项目文档结束 ===\n\n${rawPrompt}`
     : rawPrompt;
 
   // 注入长期记忆
@@ -448,23 +450,26 @@ async function invokeWithA2A(
             }
 
             const newChain = [...callChain, targetId];
-            const pairDepth = computePairDepth(callChain, agentId, targetId);
-            if (pairDepth > MAX_A2A_DEPTH) {
-              console.log(`[WS] A2A pair depth ${pairDepth} 超限: ${agentConfigs[agentId]?.name} ↔ ${agentConfigs[targetId]?.name}`);
-              continue;
-            }
             if (newChain.length > MAX_A2A_CHAIN) {
               console.log(`[WS] A2A chain length ${newChain.length} 超限: ${newChain.join("→")}`);
               continue;
             }
-            console.log(`[WS] A2A enqueue: ${agentConfigs[agentId]?.name} → ${agentConfigs[targetId]?.name}, pairDepth=${pairDepth}, chain=${newChain.join("→")}`);
+            console.log(`[WS] A2A enqueue: ${agentConfigs[agentId]?.name} → ${agentConfigs[targetId]?.name}, chain=${newChain.join("→")}`);
 
             ctx.taskQueue.enqueue(targetId, {
               id: `task-a2a-${Date.now()}-${targetId}`,
               fromAgentId: agentId, fromAgentName: agentConfigs[agentId]?.name ?? agentId,
               message: finalText, status: "pending", enqueuedAt: Date.now(),
-              threadId, callerId: agentId, depth: pairDepth, callChain: newChain,
+              threadId, callerId: agentId, depth: newChain.length, callChain: newChain,
             });
+
+            // A2A 触发记录到 log
+            ctx.projectDocStore.appendLogEntry(threadId, {
+              timestamp: new Date().toISOString(),
+              agentId,
+              agentName: agentConfigs[agentId]?.name ?? agentId,
+              action: `@${agentConfigs[targetId]?.name ?? targetId} 委派任务`,
+            }).catch(() => {});
 
             const targetStatus = agentStatus.get(targetId);
             agentStatus.set(targetId ?? targetId, {
