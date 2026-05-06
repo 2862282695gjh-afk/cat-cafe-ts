@@ -9,7 +9,7 @@
  */
 import type { Server as HTTPServer } from "node:http";
 import { Server } from "socket.io";
-import { pool, agentStatus, agentConfigs, MAX_A2A_CHAIN } from "../pool.js";
+import { pool, agentStatus, agentConfigs, MAX_A2A_DEPTH, MAX_A2A_CHAIN } from "../pool.js";
 import type { Store } from "../store/interface.js";
 import type { AssistantEvent, ResultEvent } from "@cat-noodle/core";
 import type { SessionManager } from "../session-manager.js";
@@ -29,6 +29,21 @@ interface AbortPayload {
   threadId: string;
 }
 
+/** 计算 agent pair depth：同一对 agent 之间连续来回的次数 */
+function computePairDepth(chain: string[], callerId: string, targetId: string): number {
+  const pairKey = [callerId, targetId].sort().join("↔");
+  let depth = 1;
+  for (let i = chain.length - 1; i >= 1; i--) {
+    const hopPair = [chain[i - 1], chain[i]].sort().join("↔");
+    if (hopPair === pairKey) {
+      depth++;
+    } else {
+      break;
+    }
+  }
+  return depth;
+}
+
 // ========== Agent 任务队列 ==========
 
 interface AgentTask {
@@ -40,8 +55,8 @@ interface AgentTask {
   enqueuedAt: number;
   threadId: string;
   callerId: string | null;
-  depth: number;            // 同一对 agent 之间的来回次数
-  callChain: string[];      // A2A 调用链（agentId 列表），用于计算 pair depth
+  depth: number;            // 同一对 agent 之间的来回次数（pair depth）
+  callChain: string[];      // A2A 调用链（agentId 列表），用于追踪和去重
   broadcastRecipients?: string[];  // 广播时所有收到的 agent 列表，用于去重
 }
 
@@ -449,17 +464,22 @@ ${rawPrompt}`;
             }
 
             const newChain = [...callChain, targetId];
+            const pairDepth = computePairDepth(callChain, agentId, targetId);
+            if (pairDepth > MAX_A2A_DEPTH) {
+              console.log(`[WS] A2A pair depth ${pairDepth} 超限: ${agentConfigs[agentId]?.name} ↔ ${agentConfigs[targetId]?.name}`);
+              continue;
+            }
             if (newChain.length > MAX_A2A_CHAIN) {
               console.log(`[WS] A2A chain length ${newChain.length} 超限: ${newChain.join("→")}`);
               continue;
             }
-            console.log(`[WS] A2A enqueue: ${agentConfigs[agentId]?.name} → ${agentConfigs[targetId]?.name}, chain=${newChain.join("→")}`);
+            console.log(`[WS] A2A enqueue: ${agentConfigs[agentId]?.name} → ${agentConfigs[targetId]?.name}, pairDepth=${pairDepth}, chain=${newChain.join("→")}`);
 
             ctx.taskQueue.enqueue(targetId, {
               id: `task-a2a-${Date.now()}-${targetId}`,
               fromAgentId: agentId, fromAgentName: agentConfigs[agentId]?.name ?? agentId,
               message: finalText, status: "pending", enqueuedAt: Date.now(),
-              threadId, callerId: agentId, depth: newChain.length, callChain: newChain,
+              threadId, callerId: agentId, depth: pairDepth, callChain: newChain,
             });
 
             // A2A 触发记录到 log

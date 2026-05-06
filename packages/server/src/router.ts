@@ -4,7 +4,7 @@
  * 用户可以用 @佐佐木 指定 agent，不指定则广播给所有猫。
  * Agent 回复中如果包含 @mention，自动触发 A2A 调用链。
  */
-import { pool, agentConfigs, agentStatus, MAX_A2A_CHAIN } from "./pool.js";
+import { pool, agentConfigs, agentStatus, MAX_A2A_DEPTH, MAX_A2A_CHAIN } from "./pool.js";
 
 const MAX_A2A_PER_RESPONSE = 2;
 
@@ -78,7 +78,8 @@ export function parseAgentMentions(response: string, selfId: string): string[] {
     const names = [id, config.name];
     for (const name of names) {
       // 匹配：名字紧跟逗号/冒号/任务指示（如"佐佐木，请..."、"文藏：..."）
-      const taskPattern = new RegExp(`(?<!@)${name}[，：:,\n]\\s*[^\\s，。！？\n]`, "u");
+      const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const taskPattern = new RegExp(`(?<!@)${escaped}[，：:,\n]\\s*[^\\s，。！？\n]`, "u");
       if (taskPattern.test(cleaned) && !mentions.includes(id)) {
         mentions.push(id);
         break;

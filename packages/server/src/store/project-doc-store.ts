@@ -38,7 +38,6 @@ interface Section {
 export class ProjectDocStore {
   private dir: string;
   private docCache = new Map<string, string>();
-  private logCache = new Map<string, string>();
 
   constructor(dir?: string) {
     this.dir = dir ?? join(process.cwd(), "data", "threads");
@@ -129,7 +128,6 @@ ${taskSections}
   /** 删除项目文档及相关文件 */
   async deleteDoc(threadId: string): Promise<void> {
     this.docCache.delete(threadId);
-    this.logCache.delete(threadId);
     for (const fn of [this.docPath(threadId), this.logPath(threadId), this.indexPath(threadId)]) {
       try { await unlink(fn); } catch { /* ignore */ }
     }
@@ -234,8 +232,8 @@ ${taskSections}
     // 统计任务状态
     const taskSection = sections.find((s) => s.titleText?.includes("任务跟踪"));
     if (taskSection) {
-      const todoCount = (taskSection.content.match(/^- \[ \]/gm) || []).length;
-      const doneCount = (taskSection.content.match(/^- \[x\]/gm) || []).length;
+      const todoCount = (taskSection.content.match(/^[-*] \[[ xX]\]/gm) || []).length;
+      const doneCount = (taskSection.content.match(/^[-*] \[[xX]\]/gm) || []).length;
       indexLines.push(`\n> 任务进度：${doneCount}/${todoCount + doneCount} 完成`);
     }
 

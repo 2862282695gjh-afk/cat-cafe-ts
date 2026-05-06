@@ -8,6 +8,8 @@ import type { AgentConfig } from "./store/interface.js";
 export const pool = new AgentPool();
 
 // ========== A2A 通信限制 ==========
+/** 同一对 agent 之间最多 N 轮（防止 review 循环来回甩锅） */
+export const MAX_A2A_DEPTH = 5;
 /** 全局 A2A 链最大深度（review 循环消耗大，需要足够余量） */
 export const MAX_A2A_CHAIN = 30;
 
