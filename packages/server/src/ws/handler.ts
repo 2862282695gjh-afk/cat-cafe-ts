@@ -29,7 +29,6 @@ interface AbortPayload {
   threadId: string;
 }
 
-/** 计算 agent pair depth：同一对 agent 之间连续来回的次数 */
 // ========== Agent 任务队列 ==========
 
 interface AgentTask {

@@ -8,7 +8,7 @@
  *
  * Agent 注入策略：index + agent 相关章节 + 最近 log 条目（而非整篇文档）
  */
-import { readFile, writeFile, mkdir, unlink, readdir } from "node:fs/promises";
+import { readFile, writeFile, appendFile, mkdir, unlink } from "node:fs/promises";
 import { join } from "node:path";
 
 /** Agent 信息，用于模板生成 */
@@ -181,18 +181,18 @@ ${taskSections}
 
   // ========== 结构化时间线（log.md）==========
 
-  /** 追加一条 log 条目 */
+  /** 追加一条 log 条目（并发安全：使用 appendFile 避免竞态） */
   async appendLogEntry(threadId: string, entry: LogEntry): Promise<void> {
     const logLine = `- [${entry.timestamp}] ${entry.agentName}(${entry.agentId}): ${entry.action}${entry.detail ? `\n  > ${entry.detail}` : ""}\n`;
 
     try {
-      const existing = await readFile(this.logPath(threadId), "utf-8");
-      await writeFile(this.logPath(threadId), existing + logLine, "utf-8");
+      await readFile(this.logPath(threadId), "utf-8");
     } catch {
-      // 新文件
+      // 文件不存在，先写入 header
       const header = `# 变更时间线\n\n> 结构化记录，按时间排序\n\n`;
-      await writeFile(this.logPath(threadId), header + logLine, "utf-8");
+      await writeFile(this.logPath(threadId), header, "utf-8");
     }
+    await appendFile(this.logPath(threadId), logLine, "utf-8");
   }
 
   /** 读取 log（返回最近 N 条） */
