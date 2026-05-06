@@ -3,3 +3,8 @@ dist/
 data/
 .env
 *.tsbuildinfo
+.DS_Store
+*.d.ts
+*.js
+*.js.map
+!vitest.config.ts
