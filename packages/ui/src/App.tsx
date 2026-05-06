@@ -2,13 +2,10 @@ import { useState, useCallback, Component, type ReactNode } from "react";
 import { ThreadList } from "./components/ThreadList";
 import { ChatView } from "./components/ChatView";
 import { AgentPanel } from "./components/AgentPanel";
-import { FitTrackWidgetPanel } from "./components/FitTrackWidgets";
-import "./components/FitTrackWidgets/styles/index.css";
 import { ThemeProvider, useTheme } from "./themes";
 import { ramenTheme } from "./themes/ramen";
 import { useSocket } from "./hooks/useSocket";
 import { useAgents } from "./hooks/useAgents";
-import { useFitTrack } from "./hooks/useFitTrack";
 import type { StreamEvent, AgentStatus, TaskQueueItem } from "./types";
 
 function loadActiveThread(): string | null {
@@ -24,13 +21,11 @@ function saveActiveThread(id: string | null) {
 function AppContent() {
   const { theme } = useTheme();
   const [activeThread, setActiveThread] = useState<string | null>(loadActiveThread);
-  const [showFitTrack, setShowFitTrack] = useState(false);
   const [streamEvents, setStreamEvents] = useState<StreamEvent[]>([]);
   const [threadRefresh, setThreadRefresh] = useState(0);
 
   const { agents, refresh: refreshAgents, setFromSocket } = useAgents();
   const [taskQueues, setTaskQueues] = useState<Record<string, { current: { from: string; summary: string } | null; pending: Array<{ from: string; summary: string }> }>>({});
-  const fitTrack = useFitTrack();
 
   const handleStreamEvent = useCallback((event: StreamEvent) => {
     setStreamEvents((prev) => [...prev, event]);
@@ -49,7 +44,7 @@ function AppContent() {
       mapped[k] = {
         id: v.id,
         name: v.name,
-        avatar: v.avatar ?? v.name === "社珠子" ? "👩‍🦰" : "🐱",
+        avatar: v.avatar ?? "🐱",
         status: v.status,
         statusMessage: v.statusMessage ?? v.message,
         currentTask: v.currentTask,
@@ -99,27 +94,14 @@ function AppContent() {
     <div className="flex h-screen min-h-0 bg-theme text-theme">
       {/* 左栏：招牌 + 对话列表 */}
       <aside className="w-56 border-r border-theme flex flex-col min-h-0 bg-theme-sidebar">
-        <div className="shop-sign p-3">
-          <h1 className="text-base font-bold flex items-center gap-1.5" style={{ color: "var(--sign-text)" }}>
+        <div className="shop-sign p-4">
+          <h1 className="text-lg font-bold flex items-center gap-2" style={{ color: "var(--sign-text)" }}>
             <span>{theme.icon}</span>
             <span>{theme.headerTitle}</span>
           </h1>
-          <p className="text-xs mt-0.5" style={{ color: "rgba(240,165,0,0.7)" }}>{theme.headerSubtitle}</p>
+          <p className="text-xs mt-1 tracking-widest" style={{ color: "rgba(240,165,0,0.7)" }}>{theme.headerSubtitle}</p>
         </div>
         <div className="noren" />
-
-        {/* FitTrack 切换按钮 */}
-        <button
-          onClick={() => setShowFitTrack((v) => !v)}
-          className={`mx-3 mt-2 mb-1 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${
-            showFitTrack
-              ? "text-green-200 bg-green-900/40 border border-green-700/50"
-              : "text-theme-muted hover:text-theme-accent hover:bg-theme-card border border-transparent"
-          }`}
-        >
-          <span>🐾</span>
-          <span>FitTrack 面板</span>
-        </button>
 
         <ThreadList
           activeId={activeThread}
@@ -130,21 +112,10 @@ function AppContent() {
         />
       </aside>
 
-      {/* 中栏：聊天 / FitTrack */}
+      {/* 中栏：聊天 */}
       <main className="flex-1 flex flex-col min-w-0 min-h-0">
-        {showFitTrack ? (
-          <FitTrackWidgetPanel
-            trainingPlan={fitTrack.trainingPlan ?? undefined}
-            nutritionAdvice={fitTrack.nutritionAdvice ?? undefined}
-            loading={fitTrack.loading}
-            error={fitTrack.error}
-            onCompleteExercise={(id, completed) => fitTrack.completeExercise(id, completed)}
-            onRefresh={() => fitTrack.refresh()}
-            onClose={() => setShowFitTrack(false)}
-          />
-        ) : (
-          <div className="flex-1 flex flex-col min-w-0 min-h-0 chat-area">
-            <ChatView
+        <div className="flex-1 flex flex-col min-w-0 min-h-0 chat-area">
+          <ChatView
               threadId={activeThread}
               onInvoke={invoke}
               onStop={abort}
@@ -154,7 +125,6 @@ function AppContent() {
               theme={theme}
             />
           </div>
-        )}
       </main>
 
       {/* 右栏：厨房看板 */}

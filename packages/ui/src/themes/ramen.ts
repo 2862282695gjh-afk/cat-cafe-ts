@@ -25,14 +25,6 @@ export const ramenTheme: Theme = {
   headerSubtitle: "Ramen Akaneko",
   newThreadLabel: "来一碗",
   agents: {
-    tamako: {
-      name: "社珠子",
-      avatar: "/avatars/tamako.png",
-      title: "店长 · 需求分析",
-      color: "text-amber-300",
-      ring: "ring-amber-700/50",
-      border: "border-amber-700/50",
-    },
     sasaki: {
       name: "佐佐木",
       avatar: "/avatars/sasaki.png",

@@ -26,9 +26,9 @@ export function AgentPanel({ agents, theme, taskQueues = {} }: Props) {
 
   return (
     <div className="flex flex-col shrink-0">
-      <div className="p-2.5 border-b border-theme flex items-center gap-1.5">
+      <div className="p-2.5 border-b border-theme flex items-center gap-1.5" style={{ fontFamily: "var(--font-display)" }}>
         <span className="text-sm">厨房</span>
-        <span className="text-xs font-semibold text-theme-muted tracking-wide">店员状态</span>
+        <span className="text-xs font-semibold text-theme-muted tracking-wider">店员状态</span>
       </div>
       <div className="p-2 space-y-0.5">
         {entries.length === 0 ? (

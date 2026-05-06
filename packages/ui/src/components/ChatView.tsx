@@ -128,22 +128,25 @@ export function ChatView({ threadId, onInvoke, onStop, onResume, streamEvents, a
           ...prev,
           text: prev.text + event.text,
         }));
-      } else if (event.type === "complete" && event.response) {
+      } else if (event.type === "complete") {
         const state = streamStateRef.current[agentId];
-        const content = state?.text || event.response!;
+        const content = state?.text || event.response || "";
         const logs = state?.logs ?? [];
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `assistant-${Date.now()}-${agentId}`,
-            threadId: threadId!,
-            agentId,
-            role: "assistant",
-            content,
-            timestamp: Date.now(),
-            processLogs: logs.length > 0 ? logs : undefined,
-          },
-        ]);
+        // 有内容时才保存消息（空 response 如 PASS 跳过）
+        if (content) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `assistant-${Date.now()}-${agentId}`,
+              threadId: threadId!,
+              agentId,
+              role: "assistant",
+              content,
+              timestamp: Date.now(),
+              processLogs: logs.length > 0 ? logs : undefined,
+            },
+          ]);
+        }
         removeAgentStream(agentId);
         // 所有 agent 都完成后才结束 streaming
         const remaining = Object.keys(streamStateRef.current);
@@ -227,8 +230,9 @@ export function ChatView({ threadId, onInvoke, onStop, onResume, streamEvents, a
 
   if (!threadId) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-500">
-        <p>选择或创建一个对话开始</p>
+      <div className="flex-1 flex flex-col items-center justify-center gap-3 opacity-60">
+        <span className="text-5xl" style={{ fontFamily: "var(--font-display)" }}>🐱</span>
+        <p className="text-theme-muted text-sm" style={{ fontFamily: "var(--font-display)" }}>选择或创建一个对话开始</p>
       </div>
     );
   }
@@ -238,7 +242,10 @@ export function ChatView({ threadId, onInvoke, onStop, onResume, streamEvents, a
       <div className="flex-1 overflow-y-auto p-4">
         {loading && <div className="text-theme-muted text-sm">加载中...</div>}
         {!loading && messages.length === 0 && activeStreamIds.length === 0 && !isStreaming && (
-          <div className="text-theme-muted text-sm">欢迎光临 🍜 请点餐</div>
+          <div className="flex flex-col items-center justify-center h-full gap-3 opacity-70">
+            <span className="text-4xl" style={{ fontFamily: "var(--font-display)" }}>🍜</span>
+            <span className="text-theme-muted text-sm" style={{ fontFamily: "var(--font-display)" }}>欢迎光临 · 请点餐</span>
+          </div>
         )}
 
         {messages.map((msg) => (

@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700;900&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap');
 @import "tailwindcss";
 
 /* ========================================
@@ -6,17 +7,19 @@
 body {
   overflow: hidden;
   background-color: #3E2E22;
+  font-family: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ========================================
-   赤猫拉面館 — 唯一主题
-   日式拉面馆 UI 全面改造
+   赤猫拉面館 — 精致日式匠人主题
    ======================================== */
 
 :root {
-  /* 基础色 — 调浅 */
+  /* 基础色 — 深浅层次更丰富 */
   --bg: #3E2E22;
-  --sidebar: #2E2018;
+  --sidebar: #2A1C12;
   --card: #4E3A2C;
   --border: #7A6450;
   --text: #FFF8E7;
@@ -25,7 +28,7 @@ body {
   --primary-hover: #C84B31;
   --accent: #F0A500;
   --user-bubble: #FFF8EE;
-  --user-bubble-text: #4E3A2C;
+  --user-bubble-text: #3D2B1F;
   --assistant-bubble: #4E3A2C;
   --assistant-bubble-text: #FFF8E7;
   --input-bg: #4E3A2C;
@@ -45,10 +48,14 @@ body {
   --lantern-glow: rgba(200, 75, 49, 0.3);
 
   /* 厨房看板 */
-  --kitchen-bg: #2E2018;
+  --kitchen-bg: #2A1C12;
   --ticket-bg: #FFF8E7;
   --ticket-text: #4E3A2C;
   --ticket-pin: #D4603E;
+
+  /* 字体 */
+  --font-display: "Noto Serif JP", "Hiragino Mincho ProN", serif;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", sans-serif;
 }
 
 /* 主题色工具类 */
@@ -71,10 +78,23 @@ body {
 .border-theme-input { border-color: var(--input-border); }
 
 /* ========================================
+   全局纹理 — 宣纸质感覆盖层
+   ======================================== */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ========================================
    招牌样式 — 左侧 sidebar header
    ======================================== */
 .shop-sign {
-  background: linear-gradient(135deg, #8B1A1A 0%, #C84B31 50%, #8B1A1A 100%);
+  background: linear-gradient(135deg, #6B1515 0%, #A63D28 40%, #C84B31 70%, #8B1A1A 100%);
   border-bottom: 3px solid var(--sign-border);
   position: relative;
   overflow: hidden;
@@ -84,22 +104,35 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
-    90deg,
-    transparent 0px,
-    transparent 3px,
-    rgba(0,0,0,0.08) 3px,
-    rgba(0,0,0,0.08) 4px
-  );
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 3px,
+      rgba(0,0,0,0.06) 3px,
+      rgba(0,0,0,0.06) 4px
+    ),
+    /* 顶部灯光渐变 */
+    radial-gradient(ellipse at 50% 0%, rgba(240, 165, 0, 0.15) 0%, transparent 70%);
   pointer-events: none;
 }
 
 .shop-sign h1 {
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 20px rgba(240, 165, 0, 0.2);
+  letter-spacing: 0.2em;
+  font-family: var(--font-display);
+  font-weight: 900;
+  position: relative;
+  z-index: 1;
+}
+
+.shop-sign p {
+  font-family: var(--font-body);
+  font-weight: 300;
   letter-spacing: 0.15em;
 }
 
-/* 暖簾装饰 */
+/* 暖簾装饰 — 加微妙飘动动画 */
 .noren {
   background: repeating-linear-gradient(
     90deg,
@@ -111,6 +144,13 @@ body {
   height: 14px;
   opacity: 0.7;
   border-bottom: 1px solid rgba(0,0,0,0.3);
+  animation: noren-sway 6s ease-in-out infinite;
+}
+
+@keyframes noren-sway {
+  0%, 100% { transform: scaleX(1); }
+  25% { transform: scaleX(1.003) translateX(0.5px); }
+  75% { transform: scaleX(0.997) translateX(-0.5px); }
 }
 
 /* ========================================
@@ -118,7 +158,8 @@ body {
    ======================================== */
 .menu-item {
   border-left: 3px solid transparent;
-  transition: all 0.2s;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 
 .menu-item:hover {
@@ -131,57 +172,116 @@ body {
   background-color: rgba(61, 43, 31, 0.8);
 }
 
+.menu-item.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--primary);
+  box-shadow: 0 0 8px var(--lantern-glow);
+}
+
 /* ========================================
    订单按钮 — 点餐铃风格
    ======================================== */
 .order-btn {
   background: linear-gradient(135deg, var(--primary), var(--primary-hover));
-  border: 2px solid var(--accent);
-  box-shadow: 0 2px 8px var(--lantern-glow);
-  transition: all 0.2s;
+  border: 1.5px solid var(--accent);
+  box-shadow: 0 2px 8px var(--lantern-glow), inset 0 1px 0 rgba(255,255,255,0.1);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
 .order-btn:hover {
-  box-shadow: 0 4px 16px var(--lantern-glow);
+  box-shadow: 0 4px 20px var(--lantern-glow), inset 0 1px 0 rgba(255,255,255,0.15);
   transform: translateY(-1px);
 }
 
+.order-btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
 /* ========================================
-   聊天区域 — 过道/餐桌风格
+   聊天区域 — 木质过道
    ======================================== */
 .chat-area {
   background:
+    /* 木板纹理 */
     repeating-linear-gradient(
       90deg,
       transparent 0px,
       transparent 49.5%,
-      rgba(92, 64, 51, 0.15) 49.5%,
-      rgba(92, 64, 51, 0.15) 50.5%,
+      rgba(92, 64, 51, 0.12) 49.5%,
+      rgba(92, 64, 51, 0.12) 50.5%,
       transparent 50.5%,
       transparent 100%
     ),
+    /* 底部深色渐变 */
     linear-gradient(180deg, var(--bg) 0%, #241A10 100%);
+  position: relative;
+}
+
+/* 蒸气效果 */
+.chat-area::before {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 200px;
+  height: 300px;
+  background: radial-gradient(ellipse at bottom center, rgba(255, 248, 231, 0.03) 0%, transparent 70%);
+  pointer-events: none;
+  animation: steam 8s ease-in-out infinite;
+  transform: translateX(-50%);
+}
+
+@keyframes steam {
+  0%, 100% { opacity: 0.3; transform: translateX(-50%) translateY(0); }
+  50% { opacity: 0.6; transform: translateX(-50%) translateY(-30px); }
 }
 
 /* ========================================
-   消息气泡
+   消息气泡 — 带入场动画
    ======================================== */
+
 /* 用户消息 — 订单条（暖白底 + 红色左边框） */
 .bubble-user {
-  background: var(--user-bubble);
+  background:
+    linear-gradient(135deg, #FFF8EE 0%, #FFF0D6 100%);
   color: var(--user-bubble-text);
   border-left: 3px solid var(--primary);
-  border-radius: 4px 12px 12px 4px;
-  box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+  border-radius: 4px 14px 14px 4px;
+  box-shadow:
+    2px 3px 12px rgba(0,0,0,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.5);
+  animation: bubble-in-user 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Agent 消息 — 木质托盘（深木色 + 金色上边框） */
 .bubble-agent {
-  background: var(--assistant-bubble);
+  background:
+    linear-gradient(180deg, #564432 0%, #4E3A2C 100%);
   color: var(--assistant-bubble-text);
   border-top: 2px solid var(--accent);
-  border-radius: 12px 4px 4px 12px;
-  box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+  border-radius: 14px 4px 4px 14px;
+  box-shadow:
+    2px 3px 12px rgba(0,0,0,0.25),
+    inset 0 1px 0 rgba(255,248,231,0.05);
+  animation: bubble-in-agent 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bubble-in-user {
+  from { opacity: 0; transform: translateX(12px) scale(0.95); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes bubble-in-agent {
+  from { opacity: 0; transform: translateX(-12px) scale(0.95); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
 }
 
 /* ========================================
@@ -190,25 +290,55 @@ body {
 .counter-input {
   background: var(--input-bg);
   border: 2px solid var(--input-border);
-  border-radius: 8px;
-  transition: border-color 0.2s;
+  border-radius: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: var(--font-body);
 }
 
 .counter-input:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 12px rgba(240, 165, 0, 0.15);
+  box-shadow:
+    0 0 16px rgba(240, 165, 0, 0.12),
+    0 0 4px rgba(240, 165, 0, 0.08);
 }
 
-/* 发送按钮 — 灯笼风格 */
+/* 发送按钮 — 灯笼风格 + 呼吸光效 */
 .lantern-btn {
-  background: linear-gradient(180deg, var(--lantern), #A63D28);
+  background: linear-gradient(180deg, #D4603E 0%, var(--lantern) 40%, #A63D28 100%);
   border: 2px solid var(--accent);
-  box-shadow: 0 2px 8px var(--lantern-glow);
-  transition: all 0.2s;
+  box-shadow:
+    0 2px 8px var(--lantern-glow),
+    inset 0 1px 0 rgba(255,200,100,0.2);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  animation: lantern-breathe 3s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 灯笼高光 */
+.lantern-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(255,220,150,0.15) 0%, transparent 100%);
+  pointer-events: none;
 }
 
 .lantern-btn:hover:not(:disabled) {
-  box-shadow: 0 4px 16px var(--lantern-glow);
+  box-shadow:
+    0 4px 24px rgba(200, 75, 49, 0.4),
+    0 0 40px rgba(240, 165, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.lantern-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.96);
 }
 
 .lantern-btn:disabled {
@@ -216,13 +346,20 @@ body {
   border-color: var(--border);
   box-shadow: none;
   opacity: 0.6;
+  animation: none;
+}
+
+@keyframes lantern-breathe {
+  0%, 100% { box-shadow: 0 2px 8px var(--lantern-glow), inset 0 1px 0 rgba(255,200,100,0.2); }
+  50% { box-shadow: 0 2px 16px rgba(200, 75, 49, 0.35), 0 0 24px rgba(240, 165, 0, 0.08), inset 0 1px 0 rgba(255,200,100,0.2); }
 }
 
 /* ========================================
    右侧厨房看板
    ======================================== */
 .kitchen-board {
-  background: var(--kitchen-bg);
+  background:
+    linear-gradient(180deg, var(--kitchen-bg) 0%, #1E120A 100%);
   position: relative;
 }
 
@@ -231,75 +368,101 @@ body {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 20% 20%, rgba(92, 64, 51, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(92, 64, 51, 0.08) 0%, transparent 50%);
+    radial-gradient(circle at 30% 15%, rgba(240, 165, 0, 0.04) 0%, transparent 40%),
+    radial-gradient(circle at 70% 60%, rgba(200, 75, 49, 0.03) 0%, transparent 40%);
   pointer-events: none;
 }
 
-
-/* 状态指示灯 */
+/* 状态指示灯 — 更精致的发光效果 */
 .status-light {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   display: inline-block;
+  transition: all 0.3s;
 }
 
-.status-idle { background: #8B7355; opacity: 0.6; }
-.status-thinking { background: #4A90D9; animation: pulse-light 1s infinite; }
-.status-streaming { background: #5CB85C; animation: pulse-light 0.8s infinite; }
-.status-retry { background: #F0A500; animation: pulse-light 0.5s infinite; }
-.status-error { background: #C84B31; }
+.status-idle {
+  background: #8B7355;
+  opacity: 0.5;
+}
+.status-thinking {
+  background: #5B9BD5;
+  box-shadow: 0 0 6px rgba(91, 155, 213, 0.4);
+  animation: pulse-light 1.2s ease-in-out infinite;
+}
+.status-streaming {
+  background: #5CB85C;
+  box-shadow: 0 0 6px rgba(92, 184, 92, 0.4);
+  animation: pulse-light 0.8s ease-in-out infinite;
+}
+.status-retry {
+  background: #F0A500;
+  box-shadow: 0 0 6px rgba(240, 165, 0, 0.4);
+  animation: pulse-light 0.5s ease-in-out infinite;
+}
+.status-error {
+  background: #C84B31;
+  box-shadow: 0 0 6px rgba(200, 75, 49, 0.4);
+}
 
 @keyframes pulse-light {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
 }
 
 /* ========================================
    Agent 卡片 — 厨房任务票
    ======================================== */
 .agent-ticket {
-  border-bottom: 1px dashed rgba(92, 64, 51, 0.3);
-  transition: background 0.2s;
+  border-bottom: 1px dashed rgba(92, 64, 51, 0.25);
+  transition: all 0.25s;
 }
 
 .agent-ticket:hover {
-  background: rgba(61, 43, 31, 0.3);
+  background: rgba(61, 43, 31, 0.25);
 }
 
 /* ========================================
    滚动条美化
    ======================================== */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--sidebar);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: rgba(122, 100, 80, 0.4);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: rgba(191, 160, 128, 0.5);
 }
 
 /* ========================================
    @mention 下拉
    ======================================== */
 .mention-dropdown {
-  background: var(--card);
-  border: 1px solid var(--border);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  background:
+    linear-gradient(180deg, #4E3A2C 0%, #3E2E22 100%);
+  border: 1px solid rgba(122, 100, 80, 0.5);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(240, 165, 0, 0.08);
+  backdrop-filter: blur(8px);
+  animation: dropdown-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes dropdown-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .mention-dropdown button:hover,
 .mention-dropdown button.active {
-  background: rgba(200, 75, 49, 0.3);
+  background: rgba(200, 75, 49, 0.25);
   color: var(--text);
 }
 
@@ -307,23 +470,54 @@ body {
    思考过程面板
    ======================================== */
 .thinking-panel {
-  background: rgba(26, 15, 6, 0.6);
-  border: 1px solid rgba(92, 64, 51, 0.3);
-  border-radius: 8px;
+  background: rgba(20, 12, 6, 0.7);
+  border: 1px solid rgba(92, 64, 51, 0.25);
+  border-radius: 10px;
+  backdrop-filter: blur(4px);
 }
 
 .thinking-panel .tool-card {
-  background: rgba(26, 15, 6, 0.8);
-  border: 1px solid rgba(200, 75, 49, 0.3);
-  border-radius: 6px;
+  background: rgba(20, 12, 6, 0.8);
+  border: 1px solid rgba(200, 75, 49, 0.2);
+  border-radius: 8px;
+  transition: border-color 0.2s;
+}
+
+.thinking-panel .tool-card:hover {
+  border-color: rgba(200, 75, 49, 0.4);
 }
 
 /* ========================================
    排队消息
    ======================================== */
 .queue-item {
-  background: rgba(61, 43, 31, 0.6);
-  border: 1px solid var(--border);
+  background: rgba(61, 43, 31, 0.5);
+  border: 1px solid rgba(122, 100, 80, 0.3);
   border-left: 3px solid var(--accent);
-  border-radius: 6px;
+  border-radius: 8px;
+  animation: queue-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes queue-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========================================
+   文字层级 — 用字体增强信息层次
+   ======================================== */
+h1, h2, h3 {
+  font-family: var(--font-display);
+}
+
+/* 欢迎语 */
+.text-theme-muted {
+  font-family: var(--font-body);
+  font-weight: 300;
+}
+
+/* Agent 名字 */
+.text-sky-300, .text-orange-300, .text-emerald-300, .text-amber-300 {
+  font-family: var(--font-display);
+  font-weight: 700;
 }

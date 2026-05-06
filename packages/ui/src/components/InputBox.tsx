@@ -13,7 +13,6 @@ interface Props {
 }
 
 const MENTION_AGENTS = [
-  { id: "tamako", names: ["社珠子", "tamako", "珠子", "店长"], label: "社珠子 (PM)" },
   { id: "sasaki", names: ["佐佐木", "sasaki"], label: "佐佐木 (前端)" },
   { id: "bunzo", names: ["文藏", "bunzo"], label: "文藏 (后端)" },
   { id: "kohana", names: ["小花", "kohana", "品控"], label: "小花 (QA)" },

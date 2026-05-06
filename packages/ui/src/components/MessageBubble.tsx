@@ -11,7 +11,6 @@ interface Props {
 }
 
 const AGENT_THEMES: Record<string, { color: string; ring: string; border: string }> = {
-  tamako: { color: "text-amber-300",  ring: "ring-amber-700/50",  border: "border-amber-700/50" },
   sasaki: { color: "text-sky-300",    ring: "ring-sky-700/50",    border: "border-sky-700/50" },
   bunzo:  { color: "text-orange-300", ring: "ring-orange-700/50", border: "border-orange-700/50" },
   kohana: { color: "text-emerald-300",ring: "ring-emerald-700/50",border: "border-emerald-700/50" },
@@ -140,7 +139,7 @@ export function MessageBubble({ msg, agentName, agentAvatar, isStreaming, showTh
 
       <div className={`max-w-[75%] ${isUser ? "items-end" : ""}`}>
         {/* 名字 + 时间 */}
-        <div className="text-[10px] mb-0.5">
+        <div className="text-[10px] mb-0.5" style={{ fontFamily: "var(--font-body)" }}>
           {isUser ? (
             <span className="text-theme-muted">你 · {time}</span>
           ) : (

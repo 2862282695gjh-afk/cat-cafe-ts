@@ -38,17 +38,4 @@ export const api = {
   getAgentStatus: () =>
     fetchJSON<Record<string, { id: string; name: string; avatar: string; status: string; statusMessage: string }>>("/api/agents/status"),
 
-  // FitTrack
-  getFitTrack: () =>
-    fetchJSON<{ trainingPlan: import("../components/FitTrackWidgets/types").TrainingPlan | null; nutritionAdvice: import("../components/FitTrackWidgets/types").NutritionAdvice | null; updatedAt: number }>("/api/fittrack"),
-  completeExercise: (exerciseId: string, completed: boolean) =>
-    fetchJSON<{ status: string; exercise: { id: string; completed: boolean }; progress: number; updatedAt: number }>(
-      `/api/fittrack/training/exercises/${exerciseId}/complete`,
-      { method: "PATCH", body: JSON.stringify({ completed }) },
-    ),
-  batchCompleteExercises: (items: Array<{ exerciseId: string; completed: boolean }>) =>
-    fetchJSON<{ status: string; updated: Array<{ id: string; completed: boolean }>; progress: number; updatedAt: number }>(
-      "/api/fittrack/training/exercises/batch-complete",
-      { method: "PATCH", body: JSON.stringify({ items }) },
-    ),
 };
