@@ -60,6 +60,8 @@ export interface ClaudeProcessConfig {
   maxRetryDelay?: number;
   /** plan 模式：只能规划不能执行工具 */
   planMode?: boolean;
+  /** CLI 命令（默认 "claude"，可改为 "kimi" 等） */
+  cliCommand?: string;
 }
 
 export class ClaudeProcess {
@@ -72,6 +74,7 @@ export class ClaudeProcess {
   private _baseRetryDelay: number;
   private _maxRetryDelay: number;
   private _planMode: boolean;
+  private _cliCommand: string;
 
   // 事件管线: stdout → 队列 → send() 消费者
   private eventQueue: StreamEvent[] = [];
@@ -88,6 +91,7 @@ export class ClaudeProcess {
     this._baseRetryDelay = config.baseRetryDelay ?? 5;
     this._maxRetryDelay = config.maxRetryDelay ?? 60;
     this._planMode = config.planMode ?? false;
+    this._cliCommand = config.cliCommand ?? "claude";
   }
 
   get sessionId(): string | null {
@@ -107,29 +111,38 @@ export class ClaudeProcess {
     if (this.proc && this._alive) return Promise.resolve();
 
     return new Promise((resolve, reject) => {
+      const isKimi = this._cliCommand === "kimi";
       const args = [
         "--output-format", "stream-json",
         "--input-format", "stream-json",
-        "--verbose",
       ];
 
-      // plan 模式 agent 禁用所有工具，只能输出纯文字
+      // CLI 特定参数
+      if (isKimi) {
+        args.push("--print");
+      } else {
+        args.push("--verbose");
+      }
+
+      // plan 模式 / 权限
       if (this._planMode) {
         args.push("--tools", "");
+      } else if (isKimi) {
+        args.push("--yolo");
       } else {
         args.push("--dangerously-skip-permissions");
       }
 
       // 有 sessionId 说明是重启，用 --resume 恢复上下文
       if (this._sessionId) {
-        args.push("--resume", this._sessionId);
+        args.push(isKimi ? "--session" : "--resume", this._sessionId);
       }
 
       if (this._model) {
         args.push("--model", this._model);
       }
 
-      const proc = spawn("claude", args, {
+      const proc = spawn(this._cliCommand, args, {
         env: cleanEnv(),
         stdio: ["pipe", "pipe", "pipe"],
         detached: false,
