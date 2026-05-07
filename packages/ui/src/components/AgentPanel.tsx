@@ -81,7 +81,7 @@ export function AgentPanel({ agents, theme, taskQueues = {} }: Props) {
                     <button
                       onClick={() => toggleExpand(a.id)}
                       className="w-full text-left text-[10px] px-2 py-1 rounded flex items-center justify-between transition-colors"
-                      style={{ background: "rgba(26, 15, 6, 0.4)", border: "1px solid rgba(92, 64, 51, 0.3)" }}
+                      style={{ background: "rgba(44, 36, 24, 0.04)", border: "1px solid var(--border)" }}
                     >
                       <span className="text-theme-accent truncate flex-1 mr-1">
                         {currentTask ? `${currentTask.from}：${currentTask.summary}` : `${pendingTasks.length} 个任务等待中`}
@@ -100,7 +100,7 @@ export function AgentPanel({ agents, theme, taskQueues = {} }: Props) {
                         opacity: isExpanded ? 1 : 0,
                       }}
                     >
-                      <div className="mt-1 px-2 py-1.5 rounded space-y-1" style={{ background: "rgba(26, 15, 6, 0.6)", border: "1px dashed rgba(92, 64, 51, 0.4)" }}>
+                      <div className="mt-1 px-2 py-1.5 rounded space-y-1" style={{ background: "rgba(44, 36, 24, 0.04)", border: "1px dashed var(--border)" }}>
                         {/* 当前任务 */}
                         {currentTask && (
                           <div className="flex items-start gap-1.5">

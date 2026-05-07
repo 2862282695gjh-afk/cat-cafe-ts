@@ -84,7 +84,7 @@ export function ThreadList({ activeId, onSelect, refreshKey, newThreadLabel = "�
 
       {/* 项目选择弹窗 */}
       {showProjectPicker && (
-        <div className="absolute inset-0 z-20 bg-black/50 flex items-center justify-center">
+        <div className="absolute inset-0 z-20 bg-black/20 flex items-center justify-center backdrop-blur-sm">
           <div className="bg-theme-card border border-theme rounded-lg p-4 mx-4 w-72 max-w-full shadow-xl">
             <div className="text-sm text-theme font-semibold mb-3">选择项目</div>
             <div className="space-y-1.5 max-h-60 overflow-y-auto">

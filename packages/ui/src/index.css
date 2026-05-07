@@ -1,64 +1,72 @@
-@import url('https://fonts.googleapis.cn/css2?family=Noto+Serif+JP:wght@400;700;900&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap');
 @import "tailwindcss";
 
 /* ========================================
-   全局：防止页面级滚动产生白边
-   ======================================== */
-body {
-  overflow: hidden;
-  background-color: #3E2E22;
-  font-family: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* ========================================
-   赤猫拉面館 — 精致日式匠人主题
+   赤猫拉面馆 — 日间城市拉面馆风格
+   明亮宣纸底色 + 木纹质感
    ======================================== */
 
 :root {
-  /* 基础色 — 深浅层次更丰富 */
-  --bg: #3E2E22;
-  --sidebar: #2A1C12;
-  --card: #4E3A2C;
-  --border: #7A6450;
-  --text: #FFF8E7;
-  --text-muted: #BFA080;
-  --primary: #D4603E;
-  --primary-hover: #C84B31;
-  --accent: #F0A500;
-  --user-bubble: #FFF8EE;
-  --user-bubble-text: #3D2B1F;
-  --assistant-bubble: #4E3A2C;
-  --assistant-bubble-text: #FFF8E7;
-  --input-bg: #4E3A2C;
-  --input-border: #7A6450;
+  /* ---- 基础色 ---- */
+  --bg: #EDE6D8;
+  --sidebar: #E5DDCF;
+  --card: #F5F0E8;
+  --border: #B8AD9A;
+  --text: #1E1810;
+  --text-muted: #5C5245;
+  --primary: #B8432A;
+  --primary-hover: #9E3820;
+  --accent: #C78B2E;
+  --user-bubble: #B8432A;
+  --user-bubble-text: #FFFBF5;
+  --assistant-bubble: #F5F0E8;
+  --assistant-bubble-text: #1E1810;
+  --input-bg: #F5F0E8;
+  --input-border: #B8AD9A;
 
-  /* 招牌色 */
-  --sign-bg: #A63D28;
+  /* ---- 招牌色 ---- */
+  --sign-bg: #B8432A;
   --sign-text: #F0A500;
   --sign-border: #D4A017;
 
-  /* 暖簾色 */
-  --noren: #3A5A7C;
-  --noren-alt: #4A7A5C;
+  /* ---- 暖簾色 ---- */
+  --noren: #7A3B2E;
+  --noren-alt: #5C2D22;
 
-  /* 灯笼色 */
-  --lantern: #C84B31;
-  --lantern-glow: rgba(200, 75, 49, 0.3);
+  /* ---- 灯笼色 ---- */
+  --lantern: #B8432A;
+  --lantern-glow: rgba(184, 67, 42, 0.25);
 
-  /* 厨房看板 */
-  --kitchen-bg: #2A1C12;
-  --ticket-bg: #FFF8E7;
-  --ticket-text: #4E3A2C;
-  --ticket-pin: #D4603E;
+  /* ---- 厨房看板 ---- */
+  --kitchen-bg: #F0EBE2;
+  --ticket-bg: #FFFBF5;
+  --ticket-text: #2C2418;
+  --ticket-pin: #B8432A;
 
-  /* 字体 */
-  --font-display: "Noto Serif JP", "Hiragino Mincho ProN", serif;
-  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", sans-serif;
+  /* ---- 语义色 ---- */
+  --lantern-color: #C75030;
+  --ember-color: #E8B84B;
+  --wood-color: #E8DFD0;
+  --paper-color: #FFFBF5;
+  --ink-color: #2C2418;
+
+  /* ---- 渐变 ---- */
+  --gradient-lantern: radial-gradient(circle at 50% 40%, #D4603E 0%, #B8432A 55%, #8B2F1A 100%);
+  --gradient-noren: linear-gradient(180deg, #B8432A 0%, #7A3B2E 100%);
+  --gradient-wood: linear-gradient(180deg, #F5F0E8 0%, #E8DFD0 100%);
+  --gradient-paper: linear-gradient(180deg, #FFFCF7 0%, #F5F0E8 100%);
+  --gradient-glow: radial-gradient(ellipse at center, rgba(199, 80, 48, 0.1) 0%, transparent 70%);
+
+  /* ---- 阴影 ---- */
+  --shadow-lantern: 0 8px 28px -10px rgba(184, 67, 42, 0.3), 0 4px 16px -4px rgba(199, 80, 48, 0.15);
+  --shadow-paper: 0 1px 0 rgba(255,255,255,0.6) inset, 0 6px 20px -8px rgba(44, 36, 24, 0.12);
+  --shadow-soft: 0 8px 28px -12px rgba(44, 36, 24, 0.14);
+
+  /* ---- 字体 ---- */
+  --font-display: "ZCOOL XiaoWei", "Noto Serif SC", ui-serif, Georgia, serif;
+  --font-body: "Noto Serif SC", "Hiragino Sans", sans-serif;
 }
 
-/* 主题色工具类 */
+/* ---- 主题色工具类 ---- */
 .bg-theme { background-color: var(--bg); }
 .bg-theme-sidebar { background-color: var(--sidebar); }
 .bg-theme-card { background-color: var(--card); }
@@ -78,83 +86,177 @@ body {
 .border-theme-input { border-color: var(--input-border); }
 
 /* ========================================
-   全局纹理 — 宣纸质感覆盖层
+   全局基础
    ======================================== */
+body {
+  overflow: hidden;
+  background-color: var(--bg);
+  font-family: var(--font-body);
+  font-weight: 600;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--text);
+  background-image:
+    radial-gradient(ellipse at 15% 0%, rgba(184, 67, 42, 0.05) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 100%, rgba(122, 62, 46, 0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, rgba(44, 36, 24, 0.02) 0 1px, transparent 1px 6px);
+}
+
+/* 宣纸纹理 */
 body::after {
   content: "";
   position: fixed;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  opacity: 0.03;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(44, 36, 24, 0.02) 0 1px, transparent 1px),
+    radial-gradient(circle at 70% 60%, rgba(44, 36, 24, 0.015) 0 1px, transparent 1px);
+  background-size: 24px 24px, 32px 32px;
   pointer-events: none;
   z-index: 50;
 }
 
 /* ========================================
+   动画库
+   ======================================== */
+@keyframes steam {
+  0%   { transform: translate(-50%, 0) scale(0.8); opacity: 0; }
+  20%  { opacity: 0.7; }
+  100% { transform: translate(-50%, -120px) scale(1.4); opacity: 0; }
+}
+@keyframes lantern-sway {
+  0%, 100% { transform: rotate(-2deg); }
+  50%      { transform: rotate(2deg); }
+}
+@keyframes flicker {
+  0%, 100% { opacity: 1; filter: brightness(1); }
+  45%      { opacity: 0.85; filter: brightness(1.15); }
+  55%      { opacity: 0.92; filter: brightness(0.95); }
+}
+@keyframes noren-sway {
+  0%, 100% { transform: skewX(0deg) translateX(0); }
+  50%      { transform: skewX(-1.5deg) translateX(2px); }
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.04); }
+}
+@keyframes ember-rise {
+  0%   { transform: translateY(0) translateX(0); opacity: 0; }
+  10%  { opacity: 0.9; }
+  100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+}
+@keyframes bowl-bob {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-8px) rotate(2deg); }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes tail-wag {
+  0%, 100% { transform: rotate(-12deg); }
+  50%      { transform: rotate(12deg); }
+}
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(199, 139, 46, 0.4); }
+  50%      { box-shadow: 0 0 0 12px rgba(199, 139, 46, 0); }
+}
+@keyframes cooking {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50%      { transform: translateY(-2px) rotate(3deg); }
+}
+@keyframes bubble-in-user {
+  from { opacity: 0; transform: translateX(12px) scale(0.95); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes bubble-in-agent {
+  from { opacity: 0; transform: translateX(-12px) scale(0.95); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes pulse-light {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.85); }
+}
+@keyframes dropdown-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes queue-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ========================================
+   装饰工具类
+   ======================================== */
+.noren-stripes {
+  background: repeating-linear-gradient(90deg, var(--noren) 0 22px, var(--noren-alt) 22px 24px);
+}
+.wash-paper {
+  background-color: var(--paper-color);
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(44, 36, 24, 0.02) 0 1px, transparent 1px),
+    radial-gradient(circle at 70% 60%, rgba(44, 36, 24, 0.015) 0 1px, transparent 1px);
+  background-size: 24px 24px, 32px 32px;
+}
+.paper-texture {
+  background-image: var(--gradient-paper);
+  background-blend-mode: multiply;
+}
+.wood-grain {
+  background-image: var(--gradient-wood),
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.03) 0 2px, transparent 2px 7px);
+}
+.lantern-bg { background: var(--gradient-lantern); }
+.text-stroke-ink {
+  -webkit-text-stroke: 1px rgba(44, 36, 24, 0.3);
+}
+.scrollbar-thin::-webkit-scrollbar { width: 6px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ========================================
    招牌样式 — 左侧 sidebar header
    ======================================== */
 .shop-sign {
-  background: linear-gradient(135deg, #6B1515 0%, #A63D28 40%, #C84B31 70%, #8B1A1A 100%);
-  border-bottom: 3px solid var(--sign-border);
+  background: var(--sidebar);
+  border-bottom: 2px solid var(--border);
   position: relative;
-  overflow: hidden;
 }
 
 .shop-sign::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px,
-      transparent 3px,
-      rgba(0,0,0,0.06) 3px,
-      rgba(0,0,0,0.06) 4px
-    ),
-    /* 顶部灯光渐变 */
-    radial-gradient(ellipse at 50% 0%, rgba(240, 165, 0, 0.15) 0%, transparent 70%);
-  pointer-events: none;
+  display: none;
 }
 
 .shop-sign h1 {
-  text-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 20px rgba(240, 165, 0, 0.2);
   letter-spacing: 0.2em;
   font-family: var(--font-display);
   font-weight: 900;
   position: relative;
   z-index: 1;
+  color: var(--primary);
 }
 
 .shop-sign p {
   font-family: var(--font-body);
   font-weight: 300;
   letter-spacing: 0.15em;
+  color: var(--text-muted);
 }
 
-/* 暖簾装饰 — 加微妙飘动动画 */
+/* 暖簾装饰 */
 .noren {
-  background: repeating-linear-gradient(
-    90deg,
-    var(--noren) 0px, var(--noren) 6px,
-    transparent 6px, transparent 10px,
-    var(--noren-alt) 10px, var(--noren-alt) 16px,
-    transparent 16px, transparent 20px
+  background: repeating-linear-gradient(90deg,
+    var(--noren) 0 22px,
+    var(--noren-alt) 22px 24px
   );
   height: 14px;
-  opacity: 0.7;
-  border-bottom: 1px solid rgba(0,0,0,0.3);
-  animation: noren-sway 6s ease-in-out infinite;
-}
-
-@keyframes noren-sway {
-  0%, 100% { transform: scaleX(1); }
-  25% { transform: scaleX(1.003) translateX(0.5px); }
-  75% { transform: scaleX(0.997) translateX(-0.5px); }
+  opacity: 0.85;
+  border-bottom: 1px solid rgba(0,0,0,0.15);
+  animation: noren-sway 7s ease-in-out infinite;
 }
 
 /* ========================================
-   对话列表 — 木质菜单风格
+   对话列表 — 菜单风格
    ======================================== */
 .menu-item {
   border-left: 3px solid transparent;
@@ -164,12 +266,12 @@ body::after {
 
 .menu-item:hover {
   border-left-color: var(--accent);
-  background-color: rgba(61, 43, 31, 0.6);
+  background-color: rgba(44, 36, 24, 0.04);
 }
 
 .menu-item.active {
   border-left-color: var(--primary);
-  background-color: rgba(61, 43, 31, 0.8);
+  background-color: rgba(184, 67, 42, 0.06);
 }
 
 .menu-item.active::after {
@@ -184,20 +286,26 @@ body::after {
 }
 
 /* ========================================
-   订单按钮 — 点餐铃风格
+   订单按钮
    ======================================== */
 .order-btn {
-  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  background: var(--primary);
   border: 1.5px solid var(--accent);
-  box-shadow: 0 2px 8px var(--lantern-glow), inset 0 1px 0 rgba(255,255,255,0.1);
+  box-shadow: var(--shadow-soft);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: 0.08em;
+  position: relative;
+  overflow: hidden;
+}
+
+.order-btn::before {
+  display: none;
 }
 
 .order-btn:hover {
-  box-shadow: 0 4px 20px var(--lantern-glow), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 4px 16px rgba(184, 67, 42, 0.2);
   transform: translateY(-1px);
 }
 
@@ -206,22 +314,27 @@ body::after {
 }
 
 /* ========================================
-   聊天区域 — 木质过道
+   聊天区域 — 红木桌板
    ======================================== */
 .chat-area {
   background:
-    /* 木板纹理 */
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px,
-      transparent 49.5%,
-      rgba(92, 64, 51, 0.12) 49.5%,
-      rgba(92, 64, 51, 0.12) 50.5%,
-      transparent 50.5%,
-      transparent 100%
+    /* 木纹竖线纹理 */
+    repeating-linear-gradient(90deg,
+      transparent 0px, transparent 3px,
+      rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px
     ),
-    /* 底部深色渐变 */
-    linear-gradient(180deg, var(--bg) 0%, #241A10 100%);
+    /* 粗木板缝 */
+    repeating-linear-gradient(90deg,
+      transparent 0px, transparent 58px,
+      rgba(0,0,0,0.12) 58px, rgba(0,0,0,0.12) 60px
+    ),
+    /* 木纹横纹 */
+    repeating-linear-gradient(0deg,
+      transparent 0px, transparent 18px,
+      rgba(0,0,0,0.025) 18px, rgba(0,0,0,0.025) 20px
+    ),
+    /* 底色渐变 */
+    linear-gradient(180deg, #7A3020 0%, #6B2818 40%, #5C2010 100%);
   position: relative;
 }
 
@@ -233,55 +346,33 @@ body::after {
   left: 50%;
   width: 200px;
   height: 300px;
-  background: radial-gradient(ellipse at bottom center, rgba(255, 248, 231, 0.03) 0%, transparent 70%);
+  background: radial-gradient(ellipse at bottom center, rgba(44, 36, 24, 0.02) 0%, transparent 70%);
   pointer-events: none;
-  animation: steam 8s ease-in-out infinite;
+  animation: steam 8s ease-in infinite;
   transform: translateX(-50%);
 }
 
-@keyframes steam {
-  0%, 100% { opacity: 0.3; transform: translateX(-50%) translateY(0); }
-  50% { opacity: 0.6; transform: translateX(-50%) translateY(-30px); }
-}
-
 /* ========================================
-   消息气泡 — 带入场动画
+   消息气泡 — 明亮风格
    ======================================== */
 
-/* 用户消息 — 订单条（暖白底 + 红色左边框） */
+/* 用户消息 — 暖白卡片 */
 .bubble-user {
-  background:
-    linear-gradient(135deg, #FFF8EE 0%, #FFF0D6 100%);
-  color: var(--user-bubble-text);
-  border-left: 3px solid var(--primary);
+  background: #FFF8EE;
+  color: #2C1E14;
   border-radius: 4px 14px 14px 4px;
-  box-shadow:
-    2px 3px 12px rgba(0,0,0,0.15),
-    inset 0 1px 0 rgba(255,255,255,0.5);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
   animation: bubble-in-user 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Agent 消息 — 木质托盘（深木色 + 金色上边框） */
+/* Agent 消息 — 宣纸白 */
 .bubble-agent {
-  background:
-    linear-gradient(180deg, #564432 0%, #4E3A2C 100%);
-  color: var(--assistant-bubble-text);
-  border-top: 2px solid var(--accent);
+  background: #FFFBF5;
+  color: #2C1E14;
+  border: 1px solid #D8CFC0;
   border-radius: 14px 4px 4px 14px;
-  box-shadow:
-    2px 3px 12px rgba(0,0,0,0.25),
-    inset 0 1px 0 rgba(255,248,231,0.05);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
   animation: bubble-in-agent 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes bubble-in-user {
-  from { opacity: 0; transform: translateX(12px) scale(0.95); }
-  to { opacity: 1; transform: translateX(0) scale(1); }
-}
-
-@keyframes bubble-in-agent {
-  from { opacity: 0; transform: translateX(-12px) scale(0.95); }
-  to { opacity: 1; transform: translateX(0) scale(1); }
 }
 
 /* ========================================
@@ -298,42 +389,28 @@ body::after {
 .counter-input:focus-within {
   border-color: var(--accent);
   box-shadow:
-    0 0 16px rgba(240, 165, 0, 0.12),
-    0 0 4px rgba(240, 165, 0, 0.08);
+    0 0 16px rgba(199, 139, 46, 0.1),
+    0 0 4px rgba(199, 139, 46, 0.06);
 }
 
 /* 发送按钮 — 灯笼风格 + 呼吸光效 */
 .lantern-btn {
-  background: linear-gradient(180deg, #D4603E 0%, var(--lantern) 40%, #A63D28 100%);
-  border: 2px solid var(--accent);
-  box-shadow:
-    0 2px 8px var(--lantern-glow),
-    inset 0 1px 0 rgba(255,200,100,0.2);
+  background: var(--primary);
+  border: 1.5px solid var(--primary-hover);
+  box-shadow: var(--shadow-soft);
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: 0.05em;
-  animation: lantern-breathe 3s ease-in-out infinite;
-  position: relative;
-  overflow: hidden;
 }
 
-/* 灯笼高光 */
 .lantern-btn::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 40%;
-  background: linear-gradient(180deg, rgba(255,220,150,0.15) 0%, transparent 100%);
-  pointer-events: none;
+  display: none;
 }
 
 .lantern-btn:hover:not(:disabled) {
-  box-shadow:
-    0 4px 24px rgba(200, 75, 49, 0.4),
-    0 0 40px rgba(240, 165, 0, 0.15);
+  background: var(--primary-hover);
+  box-shadow: 0 4px 16px rgba(184, 67, 42, 0.25);
   transform: translateY(-1px);
 }
 
@@ -345,21 +422,14 @@ body::after {
   background: var(--card);
   border-color: var(--border);
   box-shadow: none;
-  opacity: 0.6;
-  animation: none;
-}
-
-@keyframes lantern-breathe {
-  0%, 100% { box-shadow: 0 2px 8px var(--lantern-glow), inset 0 1px 0 rgba(255,200,100,0.2); }
-  50% { box-shadow: 0 2px 16px rgba(200, 75, 49, 0.35), 0 0 24px rgba(240, 165, 0, 0.08), inset 0 1px 0 rgba(255,200,100,0.2); }
+  opacity: 0.5;
 }
 
 /* ========================================
    右侧厨房看板
    ======================================== */
 .kitchen-board {
-  background:
-    linear-gradient(180deg, var(--kitchen-bg) 0%, #1E120A 100%);
+  background: var(--gradient-wood);
   position: relative;
 }
 
@@ -367,13 +437,13 @@ body::after {
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 30% 15%, rgba(240, 165, 0, 0.04) 0%, transparent 40%),
-    radial-gradient(circle at 70% 60%, rgba(200, 75, 49, 0.03) 0%, transparent 40%);
+  background: var(--gradient-glow);
   pointer-events: none;
 }
 
-/* 状态指示灯 — 更精致的发光效果 */
+/* ========================================
+   状态指示灯
+   ======================================== */
 .status-light {
   width: 8px;
   height: 8px;
@@ -383,51 +453,46 @@ body::after {
 }
 
 .status-idle {
-  background: #8B7355;
+  background: #A09585;
   opacity: 0.5;
 }
 .status-thinking {
   background: #5B9BD5;
-  box-shadow: 0 0 6px rgba(91, 155, 213, 0.4);
+  box-shadow: 0 0 6px rgba(91, 155, 213, 0.5);
   animation: pulse-light 1.2s ease-in-out infinite;
 }
 .status-streaming {
   background: #5CB85C;
-  box-shadow: 0 0 6px rgba(92, 184, 92, 0.4);
+  box-shadow: 0 0 6px rgba(92, 184, 92, 0.5);
   animation: pulse-light 0.8s ease-in-out infinite;
 }
 .status-retry {
-  background: #F0A500;
-  box-shadow: 0 0 6px rgba(240, 165, 0, 0.4);
+  background: #C78B2E;
+  box-shadow: 0 0 6px rgba(199, 139, 46, 0.5);
   animation: pulse-light 0.5s ease-in-out infinite;
 }
 .status-error {
-  background: #C84B31;
-  box-shadow: 0 0 6px rgba(200, 75, 49, 0.4);
-}
-
-@keyframes pulse-light {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.85); }
+  background: #B8432A;
+  box-shadow: 0 0 6px rgba(184, 67, 42, 0.5);
 }
 
 /* ========================================
-   Agent 卡片 — 厨房任务票
+   Agent 卡片
    ======================================== */
 .agent-ticket {
-  border-bottom: 1px dashed rgba(92, 64, 51, 0.25);
+  border-bottom: 1px dashed rgba(44, 36, 24, 0.12);
   transition: all 0.25s;
 }
 
 .agent-ticket:hover {
-  background: rgba(61, 43, 31, 0.25);
+  background: rgba(44, 36, 24, 0.04);
 }
 
 /* ========================================
-   滚动条美化
+   滚动条
    ======================================== */
 ::-webkit-scrollbar {
-  width: 5px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -435,89 +500,75 @@ body::after {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(122, 100, 80, 0.4);
+  background: rgba(44, 36, 24, 0.15);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(191, 160, 128, 0.5);
+  background: rgba(44, 36, 24, 0.25);
 }
 
 /* ========================================
    @mention 下拉
    ======================================== */
 .mention-dropdown {
-  background:
-    linear-gradient(180deg, #4E3A2C 0%, #3E2E22 100%);
-  border: 1px solid rgba(122, 100, 80, 0.5);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(240, 165, 0, 0.08);
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
   backdrop-filter: blur(8px);
   animation: dropdown-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes dropdown-in {
-  from { opacity: 0; transform: translateY(8px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
 .mention-dropdown button:hover,
 .mention-dropdown button.active {
-  background: rgba(200, 75, 49, 0.25);
-  color: var(--text);
+  background: rgba(184, 67, 42, 0.08);
+  color: var(--primary);
 }
 
 /* ========================================
    思考过程面板
    ======================================== */
 .thinking-panel {
-  background: rgba(20, 12, 6, 0.7);
-  border: 1px solid rgba(92, 64, 51, 0.25);
+  background: #FFFBF5;
+  border: 1px solid #D8CFC0;
   border-radius: 10px;
-  backdrop-filter: blur(4px);
 }
 
 .thinking-panel .tool-card {
-  background: rgba(20, 12, 6, 0.8);
-  border: 1px solid rgba(200, 75, 49, 0.2);
+  background: #F5F0E8;
+  border: 1px solid #D8CFC0;
   border-radius: 8px;
   transition: border-color 0.2s;
 }
 
 .thinking-panel .tool-card:hover {
-  border-color: rgba(200, 75, 49, 0.4);
+  border-color: var(--primary);
 }
 
 /* ========================================
    排队消息
    ======================================== */
 .queue-item {
-  background: rgba(61, 43, 31, 0.5);
-  border: 1px solid rgba(122, 100, 80, 0.3);
+  background: rgba(44, 36, 24, 0.04);
+  border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
   border-radius: 8px;
   animation: queue-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes queue-in {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 /* ========================================
-   文字层级 — 用字体增强信息层次
+   文字层级
    ======================================== */
 h1, h2, h3 {
   font-family: var(--font-display);
 }
 
-/* 欢迎语 */
 .text-theme-muted {
   font-family: var(--font-body);
   font-weight: 300;
 }
 
-/* Agent 名字 */
-.text-sky-300, .text-orange-300, .text-emerald-300, .text-amber-300 {
+.text-sky-300, .text-orange-300, .text-emerald-300, .text-amber-300, .text-purple-300 {
   font-family: var(--font-display);
   font-weight: 700;
 }

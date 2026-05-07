@@ -35,12 +35,12 @@ function hasUnclosedFence(text: string): boolean {
 
 function Heading({ level, children, ...props }: { level: 1 | 2 | 3 | 4 | 5 | 6; children?: ReactNode } & Record<string, unknown>) {
   const cls: Record<number, string> = {
-    1: "text-xl font-bold mt-4 mb-2 pb-1 border-b border-gray-700",
+    1: "text-xl font-bold mt-4 mb-2 pb-1 border-b border-[var(--border)]",
     2: "text-lg font-semibold mt-3 mb-1.5",
     3: "text-base font-semibold mt-2.5 mb-1",
     4: "text-sm font-semibold mt-2 mb-1",
     5: "text-sm font-medium mt-2 mb-0.5",
-    6: "text-xs font-medium mt-2 mb-0.5 text-gray-400",
+    6: "text-xs font-medium mt-2 mb-0.5 text-[var(--text-muted)]",
   };
   const Tag = `h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
   return <Tag className={cls[level]} {...props}>{children}</Tag>;
@@ -55,7 +55,7 @@ function InlineCode({ children, className, ...props }: { children?: ReactNode; c
     return <code className={className} {...props}>{children}</code>;
   }
   return (
-    <code className="bg-gray-700/60 text-pink-300 px-1.5 py-0.5 rounded text-[13px] font-mono" {...props}>
+    <code className="bg-[var(--border)]/40 text-[var(--primary)] px-1.5 py-0.5 rounded text-[13px] font-mono" {...props}>
       {children}
     </code>
   );
@@ -83,12 +83,12 @@ function CodeBlockHighlight({ code, language }: { code: string; language: string
   }, [code]);
 
   return (
-    <div className="relative group my-2 rounded-lg overflow-hidden border border-gray-700 bg-gray-900">
-      <div className="flex items-center justify-between px-3 py-1 bg-gray-800/80 border-b border-gray-700">
-        <span className="text-xs text-gray-400 font-mono">{language || "text"}</span>
+    <div className="relative group my-2 rounded-lg overflow-hidden border border-[var(--border)] bg-[var(--sidebar)]">
+      <div className="flex items-center justify-between px-3 py-1 bg-[var(--border)]/30 border-b border-[var(--border)]">
+        <span className="text-xs text-[var(--text-muted)] font-mono">{language || "text"}</span>
         <button
           onClick={handleCopy}
-          className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+          className="text-xs text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
         >
           {copied ? "已复制" : "复制"}
         </button>
@@ -119,7 +119,7 @@ function Link({ href, children, ...props }: { href?: string; children?: ReactNod
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
+      className="text-[var(--primary)] hover:text-[var(--primary-hover)] underline underline-offset-2 transition-colors"
       {...props}
     >
       {children}
@@ -128,11 +128,11 @@ function Link({ href, children, ...props }: { href?: string; children?: ReactNod
 }
 
 function Strong({ children, ...props }: { children?: ReactNode } & Record<string, unknown>) {
-  return <strong className="font-semibold text-gray-100" {...props}>{children}</strong>;
+  return <strong className="font-semibold text-[var(--text)]" {...props}>{children}</strong>;
 }
 
 function Em({ children, ...props }: { children?: ReactNode } & Record<string, unknown>) {
-  return <em className="italic text-gray-300" {...props}>{children}</em>;
+  return <em className="italic text-[var(--text-muted)]" {...props}>{children}</em>;
 }
 
 function UnorderedList({ children, ...props }: { children?: ReactNode } & Record<string, unknown>) {
@@ -149,7 +149,7 @@ function ListItem({ children, ...props }: { children?: ReactNode } & Record<stri
 
 function Blockquote({ children, ...props }: { children?: ReactNode } & Record<string, unknown>) {
   return (
-    <blockquote className="border-l-[3px] border-blue-500/60 pl-3 my-2 text-gray-300 italic" {...props}>
+    <blockquote className="border-l-[3px] border-[var(--primary)]/40 pl-3 my-2 text-[var(--text-muted)] italic" {...props}>
       {children}
     </blockquote>
   );
@@ -158,7 +158,7 @@ function Blockquote({ children, ...props }: { children?: ReactNode } & Record<st
 function Table({ children, ...props }: { children?: ReactNode } & Record<string, unknown>) {
   return (
     <div className="my-2 overflow-x-auto">
-      <table className="min-w-full border-collapse border border-gray-700 text-sm" {...props}>
+      <table className="min-w-full border-collapse border border-[var(--border)] text-sm" {...props}>
         {children}
       </table>
     </div>
@@ -166,7 +166,7 @@ function Table({ children, ...props }: { children?: ReactNode } & Record<string,
 }
 
 function TableHead({ children, ...props }: { children?: ReactNode } & Record<string, unknown>) {
-  return <thead className="bg-gray-800/80" {...props}>{children}</thead>;
+  return <thead className="bg-[var(--border)]/20" {...props}>{children}</thead>;
 }
 
 function TableBody({ children, ...props }: { children?: ReactNode } & Record<string, unknown>) {
@@ -174,12 +174,12 @@ function TableBody({ children, ...props }: { children?: ReactNode } & Record<str
 }
 
 function TableRow({ children, ...props }: { children?: ReactNode } & Record<string, unknown>) {
-  return <tr className="border-b border-gray-700" {...props}>{children}</tr>;
+  return <tr className="border-b border-[var(--border)]" {...props}>{children}</tr>;
 }
 
 function TableHeader({ children, ...props }: { children?: ReactNode } & Record<string, unknown>) {
   return (
-    <th className="px-3 py-1.5 text-left font-semibold text-gray-200 border border-gray-700" {...props}>
+    <th className="px-3 py-1.5 text-left font-semibold text-[var(--text)] border border-[var(--border)]" {...props}>
       {children}
     </th>
   );
@@ -187,18 +187,18 @@ function TableHeader({ children, ...props }: { children?: ReactNode } & Record<s
 
 function TableCell({ children, ...props }: { children?: ReactNode } & Record<string, unknown>) {
   return (
-    <td className="px-3 py-1.5 border border-gray-700 text-gray-300" {...props}>
+    <td className="px-3 py-1.5 border border-[var(--border)] text-[var(--text)]" {...props}>
       {children}
     </td>
   );
 }
 
 function HorizontalRule(props: Record<string, unknown>) {
-  return <hr className="my-3 border-gray-700" {...props} />;
+  return <hr className="my-3 border-[var(--border)]" {...props} />;
 }
 
 function Strikethrough({ children, ...props }: { children?: ReactNode } & Record<string, unknown>) {
-  return <del className="line-through text-gray-500" {...props}>{children}</del>;
+  return <del className="line-through text-[var(--text-muted)]" {...props}>{children}</del>;
 }
 
 function Image({ src, alt, ...props }: { src?: string; alt?: string } & Record<string, unknown>) {

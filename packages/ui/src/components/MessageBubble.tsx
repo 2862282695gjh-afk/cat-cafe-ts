@@ -63,7 +63,7 @@ function ToolCard({ log }: { log: ProcessLog }) {
       </button>
       {expanded && hasInput && (
         <div className="px-2.5 pb-2 border-t border-theme">
-          <pre className="text-[10px] text-theme-muted mt-1.5 whitespace-pre-wrap break-all max-h-32 overflow-y-auto rounded p-1.5" style={{ background: "rgba(26,15,6,0.6)" }}>
+          <pre className="text-[10px] text-theme-muted mt-1.5 whitespace-pre-wrap break-all max-h-32 overflow-y-auto rounded p-1.5 bg-[var(--sidebar)]">
             {JSON.stringify(log.input, null, 2)}
           </pre>
         </div>

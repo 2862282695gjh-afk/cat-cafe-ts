@@ -95,11 +95,11 @@ function AppContent() {
       {/* 左栏：招牌 + 对话列表 */}
       <aside className="w-56 border-r border-theme flex flex-col min-h-0 bg-theme-sidebar">
         <div className="shop-sign p-4">
-          <h1 className="text-lg font-bold flex items-center gap-2" style={{ color: "var(--sign-text)" }}>
+          <h1 className="text-lg font-bold flex items-center gap-2">
             <span>{theme.icon}</span>
             <span>{theme.headerTitle}</span>
           </h1>
-          <p className="text-xs mt-1 tracking-widest" style={{ color: "rgba(240,165,0,0.7)" }}>{theme.headerSubtitle}</p>
+          <p className="text-xs mt-1 tracking-widest text-theme-muted">{theme.headerSubtitle}</p>
         </div>
         <div className="noren" />
 

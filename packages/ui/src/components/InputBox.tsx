@@ -199,7 +199,7 @@ export function InputBox({ onSend, onStop, isStreaming, queue, onDequeue, onPopQ
           onClick={isStreaming ? onStop : handleSubmit}
           disabled={!isStreaming && (disabled || !text.trim())}
           className="lantern-btn px-4 rounded-lg text-sm flex items-center gap-1"
-          style={{ color: "var(--text)" }}
+          style={{ color: "var(--user-bubble-text)" }}
         >
           {isStreaming ? <><span>⏹</span><span>停止</span></> : "🍜 发送"}
         </button>
