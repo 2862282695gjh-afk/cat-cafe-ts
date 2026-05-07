@@ -82,11 +82,12 @@ Claude Code 内置的多 Agent 能力：
 | 通信拓扑 | 星形（中心转发） | 网状（共享状态） | 星形（父子进程） | **对等网络（@mention 直连）** |
 | A2A 通信 | 不支持 | 间接（黑板） | 不支持 | **支持（任意 Agent 互相 @）** |
 | Agent 身份 | 无（匿名子进程） | 无 | 无（一次性） | **持久 session + 独立记忆** |
-| 任务队列 | 无（直接 spawn） | 无 | 无（直接 spawn） | **每 Agent 独立队列，串行执行** |
+| 任务队列 | 无（直接 spawn） | 无 | 无（直接 spawn） | **独立队列 + A2A 消息合并** |
 | 并行能力 | 顶层并行 | 全部并行 | 顶层并行 | **顶层并行 + 队列内串行** |
 | 角色约束 | 仅 prompt | 仅 prompt | 仅 prompt | **系统级强制（禁用 tool）** |
 | 可观测性 | CLI 文本 | CLI 文本 | CLI 文本 | **Web UI 实时面板** |
 | 上下文持久化 | 无 | 无 | 无 | **ProjectDocStore 跨 session** |
+| 项目绑定 | 无 | 无 | 无 | **Thread-Project 工作目录绑定** |
 
 ## 核心设计
 
@@ -104,7 +105,7 @@ Agent 回复中的 `@其他Agent名` 自动触发 A2A 调用链：
 - Per-pair 深度限制：同一对 Agent 来回不超过 15 次，新 Agent 加入时重置
 - 每条回复最多触发 3 个 A2A 调用，防止失控
 
-### 2. 独立任务队列
+### 2. 独立任务队列 + A2A 消息合并
 
 每个 Agent 维护独立的串行任务队列：
 
@@ -115,6 +116,7 @@ Agent 回复中的 `@其他Agent名` 自动触发 A2A 调用链：
 
 - **顶层并行**：社珠子 @文藏 @佐佐木 → 两人同时开始
 - **队列内串行**：文藏同时收到 3 个任务，按顺序逐个执行
+- **A2A 消息合并**：当多个 Agent 同时 @ 同一个目标时，排队的 A2A 任务自动合并为一条消息，目标 Agent 一次看到所有人的需求，避免串行处理导致的信息滞后和重复劳动
 - Web UI 实时显示每个 Agent 的当前任务和等待队列
 
 ### 3. 系统级角色约束
@@ -130,7 +132,21 @@ pool.register("tamako", new ClaudeProcess({
 
 配合每次调用的提醒前缀和 A2A prompt 的汇报措辞，三重保障确保 PM 只做委派不做执行。
 
-### 4. ProjectDocStore — 跨 Session 上下文
+### 4. Thread-Project 绑定
+
+每个对话线程可以绑定一个项目，Agent 会在正确的项目目录下工作：
+
+- 新建对话时选择绑定的项目
+- Agent 收到消息时自动注入项目工作目录指令
+- 避免 Agent 误操作其他项目的文件
+
+```
+用户选择 FitTrack 项目 → 新建对话（threadId + projectId 绑定）
+→ Agent 收到: [工作目录] 当前项目目录：/path/to/FitTrack
+→ Agent 在正确目录下执行 git、文件操作
+```
+
+### 5. ProjectDocStore — 跨 Session 上下文
 
 每个对话线程维护一份 `project.md`，记录代码结构、变更历史、任务进度：
 
@@ -214,6 +230,8 @@ cd packages/ui && npm run dev
 | `data/threads/{id}.json` | 每个线程的消息记录 |
 | `data/sessions.json` | CLI session 持久化（重启后 --resume 恢复上下文） |
 | `data/memories/{agentId}.json` | Agent 长期记忆 |
+| `data/projects.json` | 项目列表（名称、路径、描述） |
+| `data/project-docs/{threadId}/` | 项目文档（index.md + log.md） |
 
 所有数据目录已加入 `.gitignore`。
 
@@ -320,10 +338,13 @@ packages/server/src/
 │   └── handler.ts      # Socket.IO 事件处理
 ├── routes/
 │   ├── threads.ts      # REST API: 线程 CRUD
+│   ├── projects.ts     # REST API: 项目 CRUD
 │   └── agents.ts       # REST API: Agent 列表/状态
 └── store/
     ├── interface.ts    # Store 接口定义
     ├── json-file.ts    # JSON 文件持久化（线程+消息）
+    ├── project-store.ts # 项目数据存储
+    ├── project-doc-store.ts # 项目文档（LLM Wiki）
     ├── file-memory.ts  # Agent 长期记忆
     └── session-store.ts # CLI sessionId 持久化
 
