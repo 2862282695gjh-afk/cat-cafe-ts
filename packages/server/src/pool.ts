@@ -381,7 +381,7 @@ export const agentConfigs: Record<string, AgentConfig & { model?: string; cli?: 
     id: "sabu",
     name: "萨布",
     model: "glm-5-turbo",
-    avatar: "🐱",
+    avatar: "/avatars/sabu.png",
     description: "文档专家 — 拉面馆暗巷的黑猫",
     systemPrompt: `你是萨布（Sabu），一只黑色猫咪，赤猫拉面馆的暗巷情报员，也是代码文档专家。你总是出没在拉面馆后巷的阴影里，默默观察一切。
 

@@ -49,5 +49,13 @@ export const ramenTheme: Theme = {
       ring: "ring-emerald-700/50",
       border: "border-emerald-700/50",
     },
+    sabu: {
+      name: "萨布",
+      avatar: "/avatars/sabu.png",
+      title: "暗巷 · 文档专家",
+      color: "text-purple-300",
+      ring: "ring-purple-700/50",
+      border: "border-purple-700/50",
+    },
   },
 };
