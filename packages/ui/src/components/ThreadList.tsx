@@ -100,7 +100,13 @@ export function ThreadList({ activeId, onSelect, refreshKey, newThreadLabel = "æ
                   onClick={() => handleCreate(p.id)}
                   className="w-full text-left px-3 py-2 rounded-md hover:bg-theme-border transition-colors"
                 >
-                  <div className="text-sm text-theme">{p.name}</div>
+                  <div className="text-sm text-theme flex items-center gap-1.5">
+                    {p.name}
+                    {p.catReadmePath
+                      ? <span className="text-[10px] text-green-500">doc âœ“</span>
+                      : <span className="text-[10px] text-amber-500">no doc</span>
+                    }
+                  </div>
                   <div className="text-xs text-theme-muted truncate">{p.path}</div>
                 </button>
               ))}

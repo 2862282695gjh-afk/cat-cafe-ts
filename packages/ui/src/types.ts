@@ -3,6 +3,7 @@ export interface Project {
   name: string;
   path: string;
   description?: string;
+  catReadmePath?: string;
   createdAt?: number;
 }
 

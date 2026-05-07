@@ -18,6 +18,7 @@ export interface Project {
   name: string;
   path: string;
   description?: string;
+  catReadmePath?: string;  // cat_readme.md 的绝对路径
   createdAt?: number;
 }
 

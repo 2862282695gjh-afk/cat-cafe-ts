@@ -12,6 +12,14 @@ export function projectRoutes(fastify: FastifyInstance, store: ProjectStore) {
     return store.listProjects();
   });
 
+  // GET /api/projects/by-path?path=xxx — 根据路径查找项目
+  fastify.get<{ Querystring: { path: string } }>("/api/projects/by-path", async (req) => {
+    if (!req.query.path) return { error: "path 参数必填" };
+    const project = await store.findByPath(req.query.path);
+    if (!project) return { error: "项目不存在" };
+    return project;
+  });
+
   // POST /api/projects — 创建项目
   fastify.post("/api/projects", async (req) => {
     const { name, path, description } = req.body as { name: string; path: string; description?: string };
@@ -28,13 +36,22 @@ export function projectRoutes(fastify: FastifyInstance, store: ProjectStore) {
 
   // PATCH /api/projects/:id — 更新项目
   fastify.patch<{ Params: { id: string } }>("/api/projects/:id", async (req) => {
-    const { name, path, description } = req.body as { name?: string; path?: string; description?: string };
-    return store.updateProject(req.params.id, { name, path, description });
+    const { name, path, description, catReadmePath } = req.body as { name?: string; path?: string; description?: string; catReadmePath?: string };
+    return store.updateProject(req.params.id, { name, path, description, catReadmePath });
   });
 
   // DELETE /api/projects/:id — 删除项目
   fastify.delete<{ Params: { id: string } }>("/api/projects/:id", async (req) => {
     const ok = await store.deleteProject(req.params.id);
     return { status: ok ? "deleted" : "not found" };
+  });
+
+  // PATCH /api/projects/:id/readme — 更新 cat_readme 路径
+  fastify.patch<{ Params: { id: string } }>("/api/projects/:id/readme", async (req) => {
+    const { catReadmePath } = req.body as { catReadmePath: string };
+    if (!catReadmePath) return { error: "catReadmePath 必填" };
+    const project = await store.updateProject(req.params.id, { catReadmePath });
+    if (!project) return { error: "项目不存在" };
+    return project;
   });
 }

@@ -14,14 +14,18 @@ const NAME_MAP: Record<string, string> = {
   "佐佐木": "sasaki",
   "文藏": "bunzo",
   "小花": "kohana",
+  "萨布": "sabu",
   // 英文
   "sasaki": "sasaki",
   "bunzo": "bunzo",
   "kohana": "kohana",
+  "sabu": "sabu",
   // 别名
   "前厅": "sasaki",
   "主厨": "bunzo",
   "品控": "kohana",
+  "文档": "sabu",
+  "暗巷": "sabu",
 };
 
 function resolveAgentId(name: string): string | null {

@@ -66,13 +66,19 @@ export class ProjectStore {
     return project;
   }
 
-  async updateProject(id: string, patch: Partial<Pick<Project, "name" | "path" | "description">>): Promise<Project | null> {
+  async updateProject(id: string, patch: Partial<Pick<Project, "name" | "path" | "description" | "catReadmePath">>): Promise<Project | null> {
     const projects = await this.read();
     const idx = projects.findIndex((p) => p.id === id);
     if (idx === -1) return null;
     projects[idx] = { ...projects[idx], ...patch };
     await this.write(projects);
     return projects[idx];
+  }
+
+  /** 根据项目路径查找项目 */
+  async findByPath(projectPath: string): Promise<Project | null> {
+    const projects = await this.read();
+    return projects.find((p) => p.path === projectPath) ?? null;
   }
 
   async deleteProject(id: string): Promise<boolean> {

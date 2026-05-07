@@ -8,6 +8,7 @@
  *   - 顶层多 agent 并行，同一 agent 内任务串行排队
  */
 import type { Server as HTTPServer } from "node:http";
+import { join } from "node:path";
 import { Server } from "socket.io";
 import { pool, agentStatus, agentConfigs, MAX_A2A_DEPTH, MAX_A2A_CHAIN } from "../pool.js";
 import type { Store } from "../store/interface.js";
@@ -351,13 +352,24 @@ ${rawPrompt}`;
     }
   }
 
-  // 注入项目工作目录
+  // 注入项目工作目录 + cat_readme.md 状态
   const thread = await ctx.store.getThread(threadId);
   const projectId = thread?.projectId;
   if (projectId) {
     const project = await ctx.projectStore.getProject(projectId);
     if (project?.path) {
-      rawPrompt = `[工作目录] 当前项目目录：${project.path}\n请确保所有文件操作（读取、编辑、git）都在此目录下进行。首次操作请先 cd ${project.path}\n\n${rawPrompt}`;
+      const readmePath = join(project.path, "cat_readme.md");
+      let readmeExists = false;
+      try {
+        const { access } = await import("node:fs/promises");
+        await access(readmePath);
+        readmeExists = true;
+      } catch { /* not found */ }
+
+      const readmeStatus = readmeExists
+        ? `cat_readme.md 状态：✅ 已存在（路径：${readmePath}）`
+        : `cat_readme.md 状态：❌ 不存在（需要 @萨布 先生成文档才能继续操作）`;
+      rawPrompt = `[工作目录] 当前项目目录：${project.path}\n${readmeStatus}\n请确保所有文件操作（读取、编辑、git）都在此目录下进行。首次操作请先 cd ${project.path}\n\n${rawPrompt}`;
     }
   }
 

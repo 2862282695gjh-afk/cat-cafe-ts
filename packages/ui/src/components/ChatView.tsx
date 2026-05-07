@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { api } from "../api/client";
 import { MessageBubble } from "./MessageBubble";
 import { InputBox } from "./InputBox";
-import type { Message, StreamEvent, ProcessLog, AgentStatus } from "../types";
+import type { Message, StreamEvent, ProcessLog, AgentStatus, Project } from "../types";
 import type { Theme } from "../themes";
 
 interface Props {
@@ -28,6 +28,7 @@ export function ChatView({ threadId, onInvoke, onStop, onResume, streamEvents, a
   const loadedRef = useRef<string | null>(null);
   const processedRef = useRef(0);
   const invokeMessageRef = useRef<(msg: string) => void>(() => {});
+  const [boundProject, setBoundProject] = useState<Project | null>(null);
 
   // 多 agent 并行流式状态：每个 agentId 独立
   const [streamingAgents, setStreamingAgents] = useState<Record<string, AgentStreamState>>({});
@@ -78,6 +79,22 @@ export function ChatView({ threadId, onInvoke, onStop, onResume, streamEvents, a
     setIsStreaming(false);
     messageQueueRef.current = [];
     setQueueVersion((v) => v + 1);
+    setBoundProject(null);
+  }, [threadId]);
+
+  // 加载绑定项目
+  useEffect(() => {
+    if (!threadId) { setBoundProject(null); return; }
+    (async () => {
+      try {
+        const threadData = await api.getThread(threadId);
+        if (threadData?.projectId) {
+          const projects = await api.getProjects();
+          const proj = projects.find((p) => p.id === threadData.projectId);
+          if (proj) setBoundProject(proj);
+        }
+      } catch { /* ignore */ }
+    })();
   }, [threadId]);
 
   // 加载历史消息
@@ -239,6 +256,20 @@ export function ChatView({ threadId, onInvoke, onStop, onResume, streamEvents, a
 
   return (
     <div className="flex flex-col h-full">
+      {/* 绑定项目栏 */}
+      {boundProject && (
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-theme text-xs bg-theme-card/50">
+          <span className="text-theme-muted">📂</span>
+          <span className="text-theme font-medium truncate">{boundProject.name}</span>
+          <span className="text-theme-muted truncate max-w-48">{boundProject.path}</span>
+          {boundProject.catReadmePath && (
+            <span className="text-green-500 text-[10px]">doc ✓</span>
+          )}
+          {!boundProject.catReadmePath && (
+            <span className="text-amber-500 text-[10px]">no cat_readme</span>
+          )}
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-4">
         {loading && <div className="text-theme-muted text-sm">加载中...</div>}
         {!loading && messages.length === 0 && activeStreamIds.length === 0 && !isStreaming && (

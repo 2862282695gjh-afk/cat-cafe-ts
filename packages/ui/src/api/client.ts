@@ -21,6 +21,8 @@ export async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T>
 export const api = {
   // Threads
   getThreads: () => fetchJSON<ThreadMeta[]>("/api/threads"),
+  getThread: (id: string) =>
+    fetchJSON<ThreadMeta & { messages?: unknown[] }>(`/api/threads/${id}`),
   createThread: (title?: string, projectId?: string) =>
     fetchJSON<{ threadId: string }>("/api/threads", {
       method: "POST",
