@@ -15,7 +15,7 @@ export const MAX_A2A_CHAIN = 30;
 
 // ========== Agent 配置 ==========
 
-export const agentConfigs: Record<string, AgentConfig & { model?: string; cli?: string }> = {
+export const agentConfigs: Record<string, AgentConfig & { model?: string; cli?: string; cwd?: string }> = {
   sasaki: {
     id: "sasaki",
     name: "佐佐木",
@@ -360,6 +360,7 @@ for (const [id, config] of Object.entries(agentConfigs)) {
     systemPrompt: config.systemPrompt,
     model: config.model,
     cliCommand: config.cli,
+    cwd: config.cwd,
   }));
 }
 

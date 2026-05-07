@@ -6,9 +6,9 @@ import { AgentPool } from "./agent-pool.js";
 import type { AgentProvider, StreamEvent, SendOptions } from "./types.js";
 
 /** 创建一个 mock AgentProvider，返回预设的事件流 */
-function createMockAgent(events: StreamEvent[]): AgentProvider & { sessionId?: string } {
+function createMockAgent(events: StreamEvent[]): AgentProvider {
   return {
-    sessionId: undefined,
+    sessionId: null,
     async *send(_prompt: string, _options?: SendOptions) {
       for (const event of events) {
         yield event;
@@ -100,8 +100,8 @@ describe("AgentPool", () => {
 
   it("agent 出错时应 emit error 事件而不是抛出异常", async () => {
     const pool = new AgentPool();
-    const badAgent: AgentProvider & { sessionId?: string } = {
-      sessionId: undefined,
+    const badAgent: AgentProvider = {
+      sessionId: null,
       async *send() {
         throw new Error("agent exploded");
       },
@@ -143,7 +143,7 @@ describe("AgentPool", () => {
 
     // 模拟一个慢 agent
     pool.register("slow", {
-      sessionId: undefined,
+      sessionId: null,
       async *send() {
         yield { type: "assistant", message: { content: [{ type: "text", text: "chunk1" }] } } as StreamEvent;
         // 等待很久

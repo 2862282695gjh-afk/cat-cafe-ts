@@ -7,9 +7,18 @@
 export interface ThreadMeta {
   id: string;
   title?: string;
+  projectId?: string;
   createdAt?: number;
   updatedAt?: number;
   lastActivity?: number;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  path: string;
+  description?: string;
+  createdAt?: number;
 }
 
 export interface Message {

@@ -1,7 +1,7 @@
 /**
  * REST API 客户端
  */
-import type { ThreadMeta, Message } from "../types";
+import type { ThreadMeta, Message, Project } from "../types";
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
@@ -21,10 +21,10 @@ export async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T>
 export const api = {
   // Threads
   getThreads: () => fetchJSON<ThreadMeta[]>("/api/threads"),
-  createThread: (title?: string) =>
+  createThread: (title?: string, projectId?: string) =>
     fetchJSON<{ threadId: string }>("/api/threads", {
       method: "POST",
-      body: JSON.stringify({ title }),
+      body: JSON.stringify({ title, projectId }),
     }),
   deleteThread: (id: string) =>
     fetchJSON<{ status: string }>(`/api/threads/${id}`, { method: "DELETE" }),
@@ -32,6 +32,16 @@ export const api = {
   // Messages
   getMessages: (threadId: string) =>
     fetchJSON<Message[]>(`/api/threads/${threadId}/messages`),
+
+  // Projects
+  getProjects: () => fetchJSON<Project[]>("/api/projects"),
+  createProject: (data: { name: string; path: string; description?: string }) =>
+    fetchJSON<Project>("/api/projects", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  deleteProject: (id: string) =>
+    fetchJSON<{ status: string }>(`/api/projects/${id}`, { method: "DELETE" }),
 
   // Agents
   getAgents: () => fetchJSON<Array<{ id: string; name: string; avatar: string; description: string }>>("/api/agents"),

@@ -62,6 +62,8 @@ export interface ClaudeProcessConfig {
   planMode?: boolean;
   /** CLI 命令（默认 "claude"，可改为 "kimi" 等） */
   cliCommand?: string;
+  /** 工作目录（默认继承父进程 cwd） */
+  cwd?: string;
 }
 
 export class ClaudeProcess {
@@ -75,6 +77,7 @@ export class ClaudeProcess {
   private _maxRetryDelay: number;
   private _planMode: boolean;
   private _cliCommand: string;
+  private _cwd: string | undefined;
 
   // 事件管线: stdout → 队列 → send() 消费者
   private eventQueue: StreamEvent[] = [];
@@ -92,6 +95,7 @@ export class ClaudeProcess {
     this._maxRetryDelay = config.maxRetryDelay ?? 60;
     this._planMode = config.planMode ?? false;
     this._cliCommand = config.cliCommand ?? "claude";
+    this._cwd = config.cwd;
   }
 
   get sessionId(): string | null {
@@ -146,6 +150,7 @@ export class ClaudeProcess {
         env: cleanEnv(),
         stdio: ["pipe", "pipe", "pipe"],
         detached: false,
+        cwd: this._cwd,
       });
 
       this.proc = proc;

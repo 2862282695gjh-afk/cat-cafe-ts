@@ -12,9 +12,12 @@ export function threadRoutes(fastify: FastifyInstance, store: Store) {
 
   // POST /api/threads — 创建线程
   fastify.post("/api/threads", async (req) => {
-    const { title } = req.body as { title?: string };
+    const { title, projectId } = req.body as { title?: string; projectId?: string };
     const id = crypto.randomUUID();
-    await store.createThread(id, title ? { title } : undefined);
+    const meta: Record<string, string> = {};
+    if (title) meta.title = title;
+    if (projectId) meta.projectId = projectId;
+    await store.createThread(id, Object.keys(meta).length > 0 ? meta : undefined);
     return { threadId: id };
   });
 

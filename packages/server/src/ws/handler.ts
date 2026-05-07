@@ -17,6 +17,7 @@ import type { MemoryExtractor } from "../memory-extractor.js";
 import { saveSessionId, getSessionId } from "../store/session-store.js";
 import { route, parseAgentMentions, buildA2APrompt } from "../router.js";
 import { ProjectDocStore } from "../store/project-doc-store.js";
+import type { ProjectStore } from "../store/project-store.js";
 import type { FileMemoryStore } from "../store/file-memory.js";
 
 interface InvokePayload {
@@ -78,6 +79,36 @@ class AgentTaskQueue {
     return task;
   }
 
+  /**
+   * 取出队首任务，并合并同线程中后续的 A2A 任务为上下文。
+   * 避免同一 agent 被多个猫 @ 时逐个串行处理导致信息滞后/冲突。
+   *
+   * 返回 { primary, merged }：
+   *   primary — 队首任务（保持原有的 depth/callChain 限制）
+   *   merged  — 同线程中紧随其后的 A2A 任务列表（作为上下文注入）
+   */
+  dequeueWithMerge(agentId: string, threadId: string): { primary: AgentTask; merged: AgentTask[] } | null {
+    const q = this.queues.get(agentId);
+    if (!q || q.length === 0) return null;
+
+    const primary = q.shift()!;
+    primary.status = "running";
+    this.running.set(agentId, primary);
+
+    // 收集同线程的后续 A2A 任务
+    const merged: AgentTask[] = [];
+    for (let i = 0; i < q.length; i++) {
+      const t = q[i];
+      if (t.threadId === threadId && t.callerId !== null) {
+        merged.push(t);
+        q.splice(i, 1);
+        i--;
+      }
+    }
+
+    return { primary, merged };
+  }
+
   markDone(agentId: string): void {
     this.running.set(agentId, null);
   }
@@ -117,12 +148,13 @@ interface WsContext {
   taskQueue: AgentTaskQueue;
   abortControllers: Map<string, AbortController[]>;
   projectDocStore: ProjectDocStore;
+  projectStore: ProjectStore;
 }
 
 // ========== WebSocket Setup ==========
 
-export function setupWebSocket(io: Server, store: Store, sessionManager: SessionManager, memoryExtractor: MemoryExtractor, memoryStore: FileMemoryStore, projectDocStore: ProjectDocStore) {
-  const ctx: WsContext = { io, store, sessionManager, memoryExtractor, memoryStore, taskQueue: new AgentTaskQueue(), abortControllers: new Map(), projectDocStore };
+export function setupWebSocket(io: Server, store: Store, sessionManager: SessionManager, memoryExtractor: MemoryExtractor, memoryStore: FileMemoryStore, projectDocStore: ProjectDocStore, projectStore: ProjectStore) {
+  const ctx: WsContext = { io, store, sessionManager, memoryExtractor, memoryStore, taskQueue: new AgentTaskQueue(), abortControllers: new Map(), projectDocStore, projectStore };
 
   function broadcastTaskQueue() {
     const snapshot = ctx.taskQueue.getSnapshot();
@@ -263,12 +295,23 @@ async function drainAgentQueue(
   signal: AbortSignal, broadcastTaskQueue: () => void,
 ): Promise<void> {
   while (!signal.aborted) {
-    const task = ctx.taskQueue.dequeue(agentId);
-    if (!task) break;
+    const result = ctx.taskQueue.dequeueWithMerge(agentId, threadId);
+    if (!result) break;
+    const { primary: task, merged } = result;
     broadcastTaskQueue();
 
+    // 合并同线程排队的 A2A 消息为上下文
+    let prompt = task.message;
+    if (merged.length > 0) {
+      const a2aContext = merged.map(t =>
+        `[${t.fromAgentName} 的追加消息]: ${t.message.slice(0, 500)}`
+      ).join("\n\n");
+      prompt += `\n\n---\n以下是其他猫同时发给你的消息（请一并处理）：\n${a2aContext}`;
+      console.log(`[WS] A2A merge: ${agentConfigs[agentId]?.name} 合并了 ${merged.length} 条排队 A2A`);
+    }
+
     try {
-      await invokeWithA2A(ctx, task.threadId, agentId, task.message, task.callerId, signal, task.depth, task.callChain, broadcastTaskQueue, task.broadcastRecipients);
+      await invokeWithA2A(ctx, task.threadId, agentId, prompt, task.callerId, signal, task.depth, task.callChain, broadcastTaskQueue, task.broadcastRecipients);
     } finally {
       ctx.taskQueue.markDone(agentId);
       broadcastTaskQueue();
@@ -305,6 +348,16 @@ async function invokeWithA2A(
 ${nextName ? `- 你回复后需要接力的话，@${nextName}。` : ""}
 
 ${rawPrompt}`;
+    }
+  }
+
+  // 注入项目工作目录
+  const thread = await ctx.store.getThread(threadId);
+  const projectId = thread?.projectId;
+  if (projectId) {
+    const project = await ctx.projectStore.getProject(projectId);
+    if (project?.path) {
+      rawPrompt = `[工作目录] 当前项目目录：${project.path}\n请确保所有文件操作（读取、编辑、git）都在此目录下进行。首次操作请先 cd ${project.path}\n\n${rawPrompt}`;
     }
   }
 

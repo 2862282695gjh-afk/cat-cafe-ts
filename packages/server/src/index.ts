@@ -11,12 +11,13 @@ import { loadSessions } from "./store/session-store.js";
 const PORT = parseInt(process.env.PORT ?? "3001", 10);
 
 async function main() {
-  const { app, store, sessionManager, memoryExtractor, fileMemory, projectDocStore } = createApp();
+  const { app, store, sessionManager, memoryExtractor, fileMemory, projectDocStore, projectStore } = createApp();
 
   // 初始化存储（从磁盘加载线程和消息）
   await store.init();
   await fileMemory.init();
   await projectDocStore.init();
+  await projectStore.init();
   loadSessions();
 
   // 等 Fastify 准备好
@@ -30,7 +31,7 @@ async function main() {
     pingTimeout: 20000,
   });
 
-  setupWebSocket(socketServer, store, sessionManager, memoryExtractor, fileMemory, projectDocStore);
+  setupWebSocket(socketServer, store, sessionManager, memoryExtractor, fileMemory, projectDocStore, projectStore);
 
   app.listen({ port: PORT, host: "0.0.0.0" }, (err, address) => {
     if (err) {

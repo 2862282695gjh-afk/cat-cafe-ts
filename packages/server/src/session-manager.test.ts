@@ -57,6 +57,10 @@ import { SessionManager } from "./session-manager.js";
 function makeResultEvent(overrides: Partial<ResultEvent> = {}): ResultEvent {
   return {
     type: "result",
+    subtype: "success",
+    is_error: false,
+    duration_ms: 1000,
+    duration_api_ms: 800,
     session_id: "test-session-id",
     result: "",
     total_cost_usd: 0.01,
@@ -67,6 +71,8 @@ function makeResultEvent(overrides: Partial<ResultEvent> = {}): ResultEvent {
       cache_creation_input_tokens: 1000,
     },
     num_turns: 2,
+    stop_reason: "end_turn",
+    uuid: "test-uuid",
     ...overrides,
   } as ResultEvent;
 }
@@ -76,7 +82,7 @@ describe("SessionManager", () => {
 
   beforeEach(() => {
     sm = new SessionManager(
-      { buildMemoryContext: vi.fn().mockResolvedValue(""), updateMemory: vi.fn().mockResolvedValue(undefined) } as unknown as import("./session-manager.js") extends { constructor: (a: infer A, ...args: never[]) => SessionManager } ? A : never,
+      { buildMemoryContext: vi.fn().mockResolvedValue(""), updateMemory: vi.fn().mockResolvedValue(undefined) } as any,
       0.85,
     );
   });
@@ -95,7 +101,15 @@ describe("SessionManager", () => {
     it("应该使用 modelUsage 中的 contextWindow", () => {
       const result = makeResultEvent({
         modelUsage: {
-          "claude-3-opus": { contextWindow: 100000 },
+          "claude-3-opus": {
+            inputTokens: 0,
+            outputTokens: 0,
+            cacheReadInputTokens: 0,
+            cacheCreationInputTokens: 0,
+            costUSD: 0,
+            contextWindow: 100000,
+            maxOutputTokens: 8192,
+          },
         },
       });
       sm.updateState("kohana", result);
