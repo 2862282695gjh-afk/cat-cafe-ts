@@ -4,7 +4,7 @@
 
 ## 解决的痛点
 
-现有 Multi-Agent 框架（AutoGen、CrewAI、Claude Code Agent Team 等）普遍存在三个问题：
+现有 Multi-Agent 框架（AutoGen、CrewAI、Claude Code Agent Team 等）普遍存在以下问题：
 
 **1. 通信拓扑单一 — Agent 之间不能直接对话**
 大多数框架采用主从式（Master-Worker）架构，子 Agent 完成任务后只能向主 Agent 汇报，子 Agent 之间无法直接协作。例如前端做完 UI 后想叫后端对接 API，必须绕回主 Agent 中转，增加延迟和 token 消耗。
@@ -15,7 +15,13 @@
 **3. 角色边界靠 prompt — 没有系统级约束**
 Agent 的职责分工完全依赖 system prompt 的文字描述，没有技术手段阻止越权。PM 角色的 Agent 随时可能自己动手写代码，违反分工原则。
 
-Cat Noodle TS 针对这三个痛点，设计了 @mention 对等路由 + 持久 session + 系统级角色约束的解决方案。
+**4. A2A 消息积压 — 信息滞后导致重复劳动**
+当多个 Agent 同时 @ 同一个目标时，消息在队列中排队等待串行处理。目标 Agent 处理第一条消息时不知道后面还有其他任务，可能做出与后续需求冲突的工作。
+
+**5. Agent 工作目录混乱 — 跨项目操作污染**
+多个 Agent 共享同一个 CLI 进程，不区分项目边界。Agent A 在处理 FitTrack 任务时，可能误操作 cat-noodle 的文件，因为 CLI 继承了错误的工作目录。
+
+Cat Noodle TS 针对这些痛点，设计了 @mention 对等路由 + 持久 session + 系统级角色约束 + A2A 消息合并 + Thread-Project 绑定的解决方案。
 
 ## 与其他 Multi-Agent 模式的对比
 
@@ -69,25 +75,25 @@ Claude Code 内置的多 Agent 能力：
 ### Cat Noodle TS — @mention 对等网络
 
 ```
-用户 → 社珠子（PM）
-        ↓ @文藏 @佐佐木（并行执行）
-        ├─ 文藏 → 完成后 @社珠子 汇报 → @小花 review
-        └─ 佐佐木 → 完成后 @社珠子 汇报     ↑
-                    ↓ @小花 review ────────────┘
-                    小花 → @社珠子 汇报结果
+用户 → 选择项目 → 广播给所有猫
+        ↓ 并行执行
+        ├─ 佐佐木（前端）→ 完成后 @小花 review
+        ├─ 文藏（后端）  → 完成后 @小花 review
+        └─ 小花（QA）    ← A2A 消息合并：一次看到佐佐木和文藏的需求
+                          → review 结果 @回对应猫修复
 ```
 
 | 维度 | 主从式 | Swarms | Claude Agent Team | Cat Noodle |
 |------|--------|--------|-------------------|------------|
 | 通信拓扑 | 星形（中心转发） | 网状（共享状态） | 星形（父子进程） | **对等网络（@mention 直连）** |
-| A2A 通信 | 不支持 | 间接（黑板） | 不支持 | **支持（任意 Agent 互相 @）** |
+| A2A 通信 | 不支持 | 间接（黑板） | 不支持 | **支持 + A2A 消息合并** |
 | Agent 身份 | 无（匿名子进程） | 无 | 无（一次性） | **持久 session + 独立记忆** |
-| 任务队列 | 无（直接 spawn） | 无 | 无（直接 spawn） | **独立队列 + A2A 消息合并** |
+| 任务队列 | 无（直接 spawn） | 无 | 无（直接 spawn） | **独立队列 + 积压合并** |
 | 并行能力 | 顶层并行 | 全部并行 | 顶层并行 | **顶层并行 + 队列内串行** |
 | 角色约束 | 仅 prompt | 仅 prompt | 仅 prompt | **系统级强制（禁用 tool）** |
 | 可观测性 | CLI 文本 | CLI 文本 | CLI 文本 | **Web UI 实时面板** |
-| 上下文持久化 | 无 | 无 | 无 | **ProjectDocStore 跨 session** |
-| 项目绑定 | 无 | 无 | 无 | **Thread-Project 工作目录绑定** |
+| 上下文持久化 | 无 | 无 | 无 | **Session Chain + ProjectDoc** |
+| 项目隔离 | 无 | 无 | 无 | **Thread-Project 工作目录绑定** |
 
 ## 核心设计
 
