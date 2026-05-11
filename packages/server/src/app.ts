@@ -6,12 +6,16 @@ import cors from "@fastify/cors";
 import { threadRoutes } from "./routes/threads.js";
 import { projectRoutes } from "./routes/projects.js";
 import { agentRoutes } from "./routes/agents.js";
+import { wikiRoutes } from "./routes/wiki.js";
+import { taskRoutes } from "./routes/tasks.js";
 import { JsonFileStore } from "./store/json-file.js";
 import { FileMemoryStore } from "./store/file-memory.js";
 import { SessionManager } from "./session-manager.js";
 import { MemoryExtractor } from "./memory-extractor.js";
 import { ProjectDocStore } from "./store/project-doc-store.js";
 import { ProjectStore } from "./store/project-store.js";
+import { WikiStore } from "./store/wiki-store.js";
+import { TaskBoardStore } from "./store/task-board-store.js";
 
 export function createApp() {
   const app = Fastify({ logger: false });
@@ -20,7 +24,7 @@ export function createApp() {
   const store = new JsonFileStore();
   const projectStore = new ProjectStore();
   threadRoutes(app, store);
-  projectRoutes(app, projectStore);
+  projectRoutes(app, projectStore, store);
   agentRoutes(app);
 
   // 长期记忆 + 上下文管理
@@ -31,5 +35,13 @@ export function createApp() {
   // 项目文档
   const projectDocStore = new ProjectDocStore();
 
-  return { app, store, sessionManager, memoryExtractor, fileMemory, projectDocStore, projectStore };
+  // Wiki 知识库
+  const wikiStore = new WikiStore(projectStore, projectDocStore);
+  wikiRoutes(app, wikiStore);
+
+  // 任务看板
+  const taskBoardStore = new TaskBoardStore();
+  taskRoutes(app, taskBoardStore);
+
+  return { app, store, sessionManager, memoryExtractor, fileMemory, projectDocStore, projectStore, wikiStore, taskBoardStore };
 }

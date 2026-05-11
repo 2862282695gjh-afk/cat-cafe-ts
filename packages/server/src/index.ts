@@ -7,17 +7,19 @@ import { createApp } from "./app.js";
 import { setupWebSocket } from "./ws/handler.js";
 import { cleanup } from "./pool.js";
 import { loadSessions } from "./store/session-store.js";
+import { setTaskIo } from "./routes/tasks.js";
 
 const PORT = parseInt(process.env.PORT ?? "3001", 10);
 
 async function main() {
-  const { app, store, sessionManager, memoryExtractor, fileMemory, projectDocStore, projectStore } = createApp();
+  const { app, store, sessionManager, memoryExtractor, fileMemory, projectDocStore, projectStore, taskBoardStore } = createApp();
 
   // 初始化存储（从磁盘加载线程和消息）
   await store.init();
   await fileMemory.init();
   await projectDocStore.init();
   await projectStore.init();
+  await taskBoardStore.init();
   loadSessions();
 
   // 等 Fastify 准备好
@@ -32,6 +34,9 @@ async function main() {
   });
 
   setupWebSocket(socketServer, store, sessionManager, memoryExtractor, fileMemory, projectDocStore, projectStore);
+
+  // 让 task API 能通过 socket.io 广播看板更新
+  setTaskIo(socketServer);
 
   app.listen({ port: PORT, host: "0.0.0.0" }, (err, address) => {
     if (err) {
