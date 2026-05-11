@@ -369,8 +369,11 @@ ${rawPrompt}`;
       const readmeStatus = readmeExists
         ? `cat_readme.md 状态：✅ 已存在（路径：${readmePath}）`
         : `cat_readme.md 状态：❌ 不存在（需要 @萨布 先生成文档才能继续操作）`;
-      rawPrompt = `[工作目录] 当前项目目录：${project.path}\n${readmeStatus}\n请确保所有文件操作（读取、编辑、git）都在此目录下进行。首次操作请先 cd ${project.path}\n\n${rawPrompt}`;
+      rawPrompt = `[工作目录] 当前项目目录：${project.path}\n当前对话ID：${threadId}\n${readmeStatus}\n请确保所有文件操作（读取、编辑、git）都在此目录下进行。首次操作请先 cd ${project.path}\n\n${rawPrompt}`;
     }
+  } else {
+    // 没有绑定项目时也注入 threadId，供萨布绑定用
+    rawPrompt = `[当前对话ID：${threadId}]\n\n${rawPrompt}`;
   }
 
   // 注入项目文档（智能提取：索引 + agent 相关章节 + 最近 log）
@@ -378,6 +381,30 @@ ${rawPrompt}`;
   let prompt = projectContext
     ? `=== 项目文档 ===\n${projectContext}\n=== 项目文档结束 ===\n\n${rawPrompt}`
     : rawPrompt;
+
+  // 注入 Wiki 工具说明（让 agent 可以主动查文档）
+  prompt = `[Wiki 知识库] 你可以随时用 Bash 工具查询项目文档（curl 调用）：
+- 搜索文档：curl -s "http://localhost:3001/api/wiki/search?q=关键词"
+- 指定项目搜：curl -s "http://localhost:3001/api/wiki/search?q=关键词&project=项目ID"
+- 看项目全文：curl -s "http://localhost:3001/api/wiki/project/项目ID"
+- 看某个章节：curl -s "http://localhost:3001/api/wiki/section?project=项目ID&title=章节名"
+- 所有有文档的项目：curl -s "http://localhost:3001/api/wiki/projects"
+
+当你需要了解项目的技术栈、目录结构、API 端点、数据模型等信息时，先用 wiki 搜索而不是猜。
+
+[任务看板] 你可以创建和管理任务（用 Bash 工具执行 curl）：
+- 创建任务：curl -s -X POST http://localhost:3001/api/tasks -H 'Content-Type: application/json' -d '{"threadId":"对话ID","title":"任务标题","description":"描述","createdBy":"你的agentId","createdByName":"你的名字","assignee":"执行者agentId","assigneeName":"执行者名字"}'
+- 开始任务：curl -s -X PATCH http://localhost:3001/api/tasks/TASK_ID/start -H 'Content-Type: application/json' -d '{"threadId":"对话ID"}'
+- 完成任务：curl -s -X PATCH http://localhost:3001/api/tasks/TASK_ID/complete -H 'Content-Type: application/json' -d '{"threadId":"对话ID"}'
+- 查看看板：curl -s "http://localhost:3001/api/tasks?threadId=对话ID"
+
+使用场景：
+- 当你需要其他猫帮你做某件事时 → 创建任务并指定 assignee
+- 当你开始做某个任务时 → 调 start
+- 当你完成某个任务时 → 调 complete
+- 对话ID = prompt 中的「当前对话ID」
+
+${prompt}`;
 
   // 注入长期记忆
   const memoryContext = await ctx.memoryStore.buildMemoryContext(agentId);
@@ -513,6 +540,89 @@ ${rawPrompt}`;
         ctx.io.to(threadId).emit("event", { type: "complete", threadId, agentId, response: finalText });
         agentStatus.set(agentId, { status: "idle", message: "等待召唤", pendingCount: ctx.taskQueue.getPendingCount(agentId) });
         ctx.io.emit("agent-status-update", { agentId, status: "idle", message: "等待召唤" });
+
+        // === 自动检测 cat_readme.md 并更新/绑定项目 ===
+        (async () => {
+          try {
+            const { access } = await import("node:fs/promises");
+            const t = await ctx.store.getThread(threadId);
+            const pid = t?.projectId;
+
+            // 已绑定项目 → 检查该项目的 cat_readme.md
+            if (pid) {
+              const project = await ctx.projectStore.getProject(pid);
+              if (project?.path) {
+                const readmePath = join(project.path, "cat_readme.md");
+                try {
+                  await access(readmePath);
+                  if (!project.catReadmePath || project.catReadmePath !== readmePath) {
+                    await ctx.projectStore.updateProject(pid, { catReadmePath: readmePath });
+                    console.log(`[WS] 自动更新 catReadmePath: project=${project.name}`);
+                  }
+                } catch { /* no readme */ }
+              }
+              ctx.io.to(threadId).emit("event", { type: "project-updated", threadId, agentId });
+              return;
+            }
+
+            // 未绑定项目 → 扫描所有已有项目
+            const allProjects = await ctx.projectStore.listProjects();
+            for (const project of allProjects) {
+              if (!project.path) continue;
+              const readmePath = join(project.path, "cat_readme.md");
+              try {
+                await access(readmePath);
+                await ctx.projectStore.updateProject(project.id, { catReadmePath: readmePath });
+                await ctx.store.updateThread(threadId, { projectId: project.id });
+                console.log(`[WS] 自动绑定: thread=${threadId.slice(0, 8)} → project=${project.name}`);
+                ctx.io.to(threadId).emit("event", { type: "project-updated", threadId, agentId });
+                return;
+              } catch { /* no readme */ }
+            }
+
+            // 从 agent 日志中提取工作路径（支持 cd、Write、Edit 等多种方式）
+            const logs = agentLogs.get(agentId) ?? [];
+            const candidatePaths = new Set<string>();
+
+            for (const log of logs) {
+              if (log.type !== "tool") continue;
+              const input = log.input as Record<string, string>;
+
+              // Bash: 提取 cd 路径
+              if (log.name === "Bash" && input?.command) {
+                const cdMatch = input.command.match(/cd\s+["']?([^\s"';&|]+)/);
+                if (cdMatch) candidatePaths.add(cdMatch[1]);
+              }
+              // Write/Edit: 从 file_path 提取包含 cat_readme.md 的目录
+              if ((log.name === "Write" || log.name === "Edit") && input?.file_path) {
+                if (input.file_path.includes("cat_readme.md")) {
+                  candidatePaths.add(input.file_path.replace(/\/cat_readme\.md$/, ""));
+                } else {
+                  // 一般文件操作 → 取上一级目录作为候选
+                  candidatePaths.add(input.file_path.replace(/\/[^/]+$/, ""));
+                }
+              }
+            }
+
+            for (const workDir of candidatePaths) {
+              const readmePath = join(workDir, "cat_readme.md");
+              try {
+                await access(readmePath);
+                const dirName = workDir.split("/").pop() || "未命名";
+                const proj = await ctx.projectStore.createProject({ name: dirName, path: workDir });
+                await ctx.projectStore.updateProject(proj.id, { catReadmePath: readmePath });
+                await ctx.store.updateThread(threadId, { projectId: proj.id });
+                console.log(`[WS] 自动创建+绑定: thread=${threadId.slice(0, 8)} → project=${proj.name} (${workDir})`);
+                ctx.io.to(threadId).emit("event", { type: "project-updated", threadId, agentId });
+                return;
+              } catch { /* no readme in this dir */ }
+            }
+
+            console.log(`[WS] 自动检测未找到 cat_readme.md, thread=${threadId.slice(0, 8)}, candidates=${[...candidatePaths].join(",") || "none"}`);
+          } catch {
+            // 忽略
+          }
+        })().catch(() => {});
 
         ctx.memoryExtractor.maybeExtract(agentId, message, finalText).catch(() => {});
 
