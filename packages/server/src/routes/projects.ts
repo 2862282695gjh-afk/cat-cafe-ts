@@ -5,8 +5,9 @@
  */
 import type { FastifyInstance } from "fastify";
 import { ProjectStore } from "../store/project-store.js";
+import type { Store } from "../store/interface.js";
 
-export function projectRoutes(fastify: FastifyInstance, store: ProjectStore) {
+export function projectRoutes(fastify: FastifyInstance, store: ProjectStore, threadStore?: Store) {
   // GET /api/projects — 列出所有项目
   fastify.get("/api/projects", async () => {
     return store.listProjects();
@@ -18,6 +19,15 @@ export function projectRoutes(fastify: FastifyInstance, store: ProjectStore) {
     const project = await store.findByPath(req.query.path);
     if (!project) return { error: "项目不存在" };
     return project;
+  });
+
+  // PATCH /api/projects/by-path?path=xxx — 根据路径更新项目（供 agent 调用）
+  fastify.patch<{ Querystring: { path: string } }>("/api/projects/by-path", async (req) => {
+    if (!req.query.path) return { error: "path 参数必填" };
+    const project = await store.findByPath(req.query.path);
+    if (!project) return { error: "项目不存在" };
+    const { catReadmePath } = req.body as { catReadmePath?: string };
+    return store.updateProject(project.id, { catReadmePath });
   });
 
   // POST /api/projects — 创建项目
@@ -53,5 +63,37 @@ export function projectRoutes(fastify: FastifyInstance, store: ProjectStore) {
     const project = await store.updateProject(req.params.id, { catReadmePath });
     if (!project) return { error: "项目不存在" };
     return project;
+  });
+
+  // POST /api/bind-doc — 萨布专用：更新 catReadmePath + 绑定 thread 到 project（自动创建项目）
+  fastify.post("/api/bind-doc", async (req) => {
+    const { threadId, projectPath, catReadmePath } = req.body as {
+      threadId: string;
+      projectPath: string;
+      catReadmePath?: string;
+    };
+    if (!threadId || !projectPath) return { error: "threadId 和 projectPath 必填" };
+
+    const normalizedPath = projectPath.replace(/\/$/, "");
+    const readmePath = catReadmePath || `${normalizedPath}/cat_readme.md`;
+
+    // 根据路径找项目，不存在则自动创建
+    let project = await store.findByPath(normalizedPath);
+    if (!project) {
+      const dirName = normalizedPath.split("/").pop() || "未命名项目";
+      project = await store.createProject({ name: dirName, path: normalizedPath });
+      console.log(`[API] bind-doc: 自动创建项目 ${project.name} (${normalizedPath})`);
+    }
+
+    // 更新 catReadmePath
+    await store.updateProject(project.id, { catReadmePath: readmePath });
+
+    // 绑定 thread 到 project
+    if (threadStore) {
+      await threadStore.updateThread(threadId, { projectId: project.id });
+    }
+
+    console.log(`[API] bind-doc: thread=${threadId.slice(0, 8)} → project=${project.name}, readme=${readmePath}`);
+    return { status: "ok", projectId: project.id, catReadmePath: readmePath };
   });
 }
