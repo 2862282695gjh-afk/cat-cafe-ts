@@ -42,7 +42,9 @@ cat-noodle-ts/
 │   │       ├── ws/handler.ts       # Socket.IO 事件处理（流式转发）
 │   │       ├── routes/
 │   │       │   ├── threads.ts      # REST: 对话线程 CRUD
-│   │       │   ├── projects.ts     # REST: 项目 CRUD
+│   │       │   ├── projects.ts     # REST: 项目 CRUD + bind-doc + by-path
+│   │       │   ├── wiki.ts         # REST: Wiki 知识库检索（搜索/章节/全文）
+│   │       │   ├── tasks.ts        # REST: 任务看板 CRUD（创建/开始/完成/查询）
 │   │       │   └── agents.ts       # REST: Agent 列表/状态
 │   │       └── store/
 │   │           ├── interface.ts    # Store 接口定义
@@ -50,7 +52,9 @@ cat-noodle-ts/
 │   │           ├── project-store.ts# 项目元数据存储
 │   │           ├── project-doc-store.ts # 项目文档（LLM Wiki，三文件分离）
 │   │           ├── file-memory.ts  # Agent 长期记忆
-│   │           └── session-store.ts# CLI sessionId 持久化
+│   │           ├── session-store.ts# CLI sessionId 持久化
+│   │           ├── wiki-store.ts   # Wiki 知识库（文档检索 + 关键词搜索 + 30s 缓存）
+│   │           └── task-board-store.ts # 任务看板（per-thread JSON 文件持久化）
 │   ├── ui/                         # React 前端
 │   │   └── src/
 │   │       ├── App.tsx             # 主应用（ThemeRouter + Thread 切换）
@@ -59,10 +63,10 @@ cat-noodle-ts/
 │   │       ├── main.tsx            # Vite 入口
 │   │       ├── api/client.ts       # REST API 客户端
 │   │       ├── components/
-│   │       │   ├── ChatView.tsx    # 聊天主视图（流式事件处理 + 状态缓存）
+│   │       │   ├── ChatView.tsx    # 聊天主视图（流式事件 + 任务看板 + Wiki 面板 + 状态缓存）
 │   │       │   ├── MessageBubble.tsx # 消息气泡（Markdown 渲染）
 │   │       │   ├── InputBox.tsx    # 输入框（@mention 自动补全）
-│   │       │   ├── AgentPanel.tsx  # 右侧 Agent 状态面板
+│   │       │   ├── AgentPanel.tsx  # 右侧 Agent 状态面板（含项目信息 + 任务看板 tab）
 │   │       │   ├── ThreadList.tsx  # 左侧对话列表
 │   │       │   └── MarkdownRenderer.tsx # Markdown 渲染器
 │   │       ├── hooks/
@@ -102,6 +106,24 @@ cat-noodle-ts/
 - 职责：每个 Thread 维护项目文档（index.md + log.md + 最近变更），跨 session 持久化上下文
 - 关键接口：`getDoc(threadId)`, `updateDoc(threadId, section, content)`
 
+### WikiStore（知识库检索）
+- 路径：`packages/server/src/store/wiki-store.ts`
+- 职责：Agent 可主动查询的文档检索系统，数据源为 cat_readme.md + project-doc
+- 关键特性：关键词匹配评分（无需 embedding）、30s 缓存、按相关度排序 top 10
+- 关键接口：`search(query)`, `getSection(projectId, title)`, `getFullDoc(projectId)`
+
+### TaskBoardStore（任务看板）
+- 路径：`packages/server/src/store/task-board-store.ts`
+- 职责：per-thread 任务看板，Agent 通过 API 创建/分配/完成跨猫协作任务
+- 关键特性：JSON 文件持久化（`data/tasks/{threadId}.json`）、状态流转（pending → in_progress → done）
+- 关键接口：`createTask()`, `startTask()`, `completeTask()`, `getBoard()`
+
+### 自动项目绑定（cat_readme.md 检测）
+- 路径：`packages/server/src/ws/handler.ts`（Agent 完成回复后触发）
+- 职责：Agent 每次完成回复后，自动扫描工作目录检测 cat_readme.md，自动绑定 thread 到 project
+- 检测策略：已绑定项目 → 更新 catReadmePath；未绑定 → 扫描已有项目 → 从 agent 日志提取路径候选 → 自动创建项目
+- 关键 API：`POST /api/bind-doc`（萨布专用手动绑定 + 自动创建项目）
+
 ## API 端点
 
 | 方法 | 路径 | 说明 |
@@ -115,7 +137,18 @@ cat-noodle-ts/
 | GET | `/api/projects` | 获取项目列表 |
 | POST | `/api/projects` | 创建项目 |
 | GET | `/api/agents` | 获取 Agent 列表及状态 |
-| WS | `/socket.io` | 实时事件（流式输出、Agent 状态变更） |
+| PATCH | `/api/projects/by-path?path=xxx` | 根据路径更新项目（供 agent 调用） |
+| POST | `/api/bind-doc` | 萨布专用：更新 catReadmePath + 绑定 thread 到 project |
+| PATCH | `/api/threads/:id` | 更新线程属性（如 projectId） |
+| GET | `/api/wiki/search?q=keyword[&project=projectId]` | 搜索文档（关键词匹配，返回 top 10） |
+| GET | `/api/wiki/projects` | 列出有文档的项目 |
+| GET | `/api/wiki/project/:id` | 获取项目文档全文 |
+| GET | `/api/wiki/section?project=projectId&title=sectionTitle` | 获取特定章节 |
+| POST | `/api/tasks` | 创建任务（含 threadId、标题、创建者、分配者） |
+| GET | `/api/tasks?threadId=xxx` | 获取看板（按 thread） |
+| PATCH | `/api/tasks/:id/start` | 开始任务（status → in_progress） |
+| PATCH | `/api/tasks/:id/complete` | 完成任务（status → done） |
+| WS | `/socket.io` | 实时事件（流式输出、Agent 状态变更、project-updated、task-board） |
 
 ## Agent 角色配置
 
@@ -132,8 +165,9 @@ cat-noodle-ts/
 Thread { id, title, projectId, createdAt }
 Message { id, threadId, role, content, agentId?, timestamp }
 AgentState { id, status, currentTask, queueLength }
-Project { id, name, path, description }
+Project { id, name, path, description, catReadmePath? }
 Session { agentId, sessionId, threadId }
+BoardTask { id, threadId, title, description?, createdBy, createdByName, assignee?, assigneeName?, status, createdAt, completedAt? }
 ```
 
 ## 配置
@@ -144,5 +178,6 @@ Session { agentId, sessionId, threadId }
 
 ## 已知问题 & TODO
 - FitTrack 组件已从代码库移除（属 Thread-Project 绑定的外部项目），BACKLOG.md 中仍保留历史记录
-- 小花的 Code Review 和 E2E 测试未完成（BACKLOG.md 跟踪）
-- 当前有 11 个文件未提交的修改（UI 主题精细化 + pool.ts 调整）
+- E2E 测试待进行（Code Review 已通过，53 测试全部 passed）
+- 前端 8 文件 + cat_readme.md 未提交：任务看板 UI（AgentPanel tab）、项目绑定器下拉（ChatView）、萨布 @mention 自动补全（InputBox）、boardTasks 类型/socket 事件（types/useSocket）、style 微调
+- 所有 Agent 已添加 Discovery Phase prompt（需求澄清流程），收到模糊需求时先追问再动手
