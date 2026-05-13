@@ -29,6 +29,8 @@ export function ChatView({ threadId, onInvoke, onStop, onResume, streamEvents, a
   const processedRef = useRef(0);
   const invokeMessageRef = useRef<(msg: string) => void>(() => {});
   const [boundProject, setBoundProject] = useState<Project | null>(null);
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
+  const [showProjectBinder, setShowProjectBinder] = useState(false);
 
   // 多 agent 并行流式状态：每个 agentId 独立
   const [streamingAgents, setStreamingAgents] = useState<Record<string, AgentStreamState>>({});
@@ -82,14 +84,27 @@ export function ChatView({ threadId, onInvoke, onStop, onResume, streamEvents, a
     setBoundProject(null);
   }, [threadId]);
 
+  // 辅助：刷新绑定项目信息（萨布生成文档后更新 catReadmePath）
+  const refreshBoundProject = useCallback(async () => {
+    if (!threadId) return;
+    try {
+      const [threadData, projects] = await Promise.all([api.getThread(threadId), api.getProjects()]);
+      setAllProjects(projects);
+      if (threadData?.projectId) {
+        const proj = projects.find((p) => p.id === threadData.projectId);
+        if (proj) setBoundProject(proj);
+      }
+    } catch { /* ignore */ }
+  }, [threadId]);
+
   // 加载绑定项目
   useEffect(() => {
     if (!threadId) { setBoundProject(null); return; }
     (async () => {
       try {
-        const threadData = await api.getThread(threadId);
+        const [threadData, projects] = await Promise.all([api.getThread(threadId), api.getProjects()]);
+        setAllProjects(projects);
         if (threadData?.projectId) {
-          const projects = await api.getProjects();
           const proj = projects.find((p) => p.id === threadData.projectId);
           if (proj) setBoundProject(proj);
         }
@@ -169,6 +184,8 @@ export function ChatView({ threadId, onInvoke, onStop, onResume, streamEvents, a
         const remaining = Object.keys(streamStateRef.current);
         if (remaining.length === 0) {
           setIsStreaming(false);
+          // 刷新项目信息（萨布可能刚更新了 catReadmePath）
+          refreshBoundProject();
           setTimeout(drainQueue, 100);
         }
       } else if (event.type === "aborted") {
@@ -200,6 +217,9 @@ export function ChatView({ threadId, onInvoke, onStop, onResume, streamEvents, a
           setIsStreaming(false);
           setTimeout(drainQueue, 100);
         }
+      } else if (event.type === "project-updated") {
+        // 服务器检测到 cat_readme.md 变化，刷新项目信息
+        refreshBoundProject();
       }
     }
     processedRef.current = streamEvents.length;
@@ -225,6 +245,20 @@ export function ChatView({ threadId, onInvoke, onStop, onResume, streamEvents, a
     setQueueVersion((v) => v + 1);
     window.dispatchEvent(new CustomEvent("catcafe:fill-input", { detail: text }));
   }, []);
+
+  const handleBindProject = useCallback(async (projectId?: string) => {
+    if (!threadId) return;
+    try {
+      await api.updateThread(threadId, { projectId: projectId ?? null });
+      if (projectId) {
+        const proj = allProjects.find((p) => p.id === projectId);
+        setBoundProject(proj ?? null);
+      } else {
+        setBoundProject(null);
+      }
+    } catch { /* ignore */ }
+    setShowProjectBinder(false);
+  }, [threadId, allProjects]);
 
   const getAgentInfo = (agentId: string) => {
     const a = agents?.[agentId];
@@ -255,27 +289,94 @@ export function ChatView({ threadId, onInvoke, onStop, onResume, streamEvents, a
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* 绑定项目栏 */}
-      {boundProject && (
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-theme text-xs bg-theme-card/50">
-          <span className="text-theme-muted">📂</span>
-          <span className="text-theme font-medium truncate">{boundProject.name}</span>
-          <span className="text-theme-muted truncate max-w-48">{boundProject.path}</span>
-          {boundProject.catReadmePath && (
-            <span className="text-green-500 text-[10px]">doc ✓</span>
-          )}
-          {!boundProject.catReadmePath && (
-            <span className="text-amber-500 text-[10px]">no cat_readme</span>
-          )}
-        </div>
-      )}
+    <div className="flex flex-col h-full" onClick={() => showProjectBinder && setShowProjectBinder(false)}>
+      {/* 绑定项目栏 — 红木桌板上的浅色信息条 */}
+      <div className="relative" onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "rgba(255,248,230,0.10)",
+          borderBottom: "1px solid rgba(255,248,230,0.12)",
+        }}
+      >
+        {boundProject ? (
+          <button
+            onClick={() => setShowProjectBinder(true)}
+            className="flex items-center gap-2 px-4 py-2 text-xs w-full text-left hover:opacity-80 transition-opacity cursor-pointer"
+            style={{ color: "rgba(255,248,230,0.85)" }}
+            title="点击切换项目"
+          >
+            <span>📂</span>
+            <span className="font-medium truncate">{boundProject.name}</span>
+            <span className="truncate max-w-48" style={{ color: "rgba(255,248,230,0.55)" }}>{boundProject.path}</span>
+            {boundProject.catReadmePath && (
+              <span className="text-green-400 text-[10px]">doc ✓</span>
+            )}
+            {!boundProject.catReadmePath && (
+              <span className="text-amber-400 text-[10px]">no doc</span>
+            )}
+            <span className="ml-auto text-[10px]" style={{ color: "rgba(255,248,230,0.4)" }}>切换 ▾</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setShowProjectBinder(true)}
+            className="flex items-center gap-2 px-4 py-2 text-xs w-full text-left hover:opacity-80 transition-opacity cursor-pointer"
+            style={{ color: "rgba(255,248,230,0.6)" }}
+          >
+            <span>📎</span>
+            <span>绑定项目</span>
+            <span className="text-[10px]" style={{ color: "rgba(255,248,230,0.35)" }}>让猫咪在正确目录下工作</span>
+          </button>
+        )}
+
+        {/* 项目选择下拉 */}
+        {showProjectBinder && (
+          <div className="absolute top-full left-0 right-0 z-30 shadow-lg border"
+            style={{
+              background: "#3A2215",
+              borderColor: "rgba(255,248,230,0.15)",
+              maxHeight: 240,
+              overflowY: "auto",
+            }}
+          >
+            <button
+              onClick={() => handleBindProject(undefined)}
+              className="w-full text-left px-4 py-2 text-xs hover:opacity-80 transition-opacity"
+              style={{ color: "rgba(255,248,230,0.7)", borderBottom: "1px solid rgba(255,248,230,0.08)" }}
+            >
+              ✕ 解除绑定
+            </button>
+            {allProjects.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => handleBindProject(p.id)}
+                className="w-full text-left px-4 py-2 text-xs hover:opacity-80 transition-opacity flex items-center gap-2"
+                style={{
+                  color: boundProject?.id === p.id ? "#C78B2E" : "rgba(255,248,230,0.85)",
+                  borderBottom: "1px solid rgba(255,248,230,0.08)",
+                }}
+              >
+                <span className="font-medium">{p.name}</span>
+                <span className="truncate max-w-40" style={{ color: "rgba(255,248,230,0.45)" }}>{p.path}</span>
+                {p.catReadmePath
+                  ? <span className="text-green-400 text-[10px]">doc ✓</span>
+                  : <span className="text-amber-400 text-[10px]">no doc</span>
+                }
+                {boundProject?.id === p.id && <span className="ml-auto text-[10px]">当前</span>}
+              </button>
+            ))}
+            {allProjects.length === 0 && (
+              <div className="px-4 py-3 text-xs" style={{ color: "rgba(255,248,230,0.5)" }}>
+                暂无项目 — 请先在菜单中创建
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       <div className="flex-1 overflow-y-auto p-4">
-        {loading && <div className="text-theme-muted text-sm">加载中...</div>}
+        {loading && <div className="text-sm" style={{ color: "rgba(255,248,230,0.7)" }}>加载中...</div>}
         {!loading && messages.length === 0 && activeStreamIds.length === 0 && !isStreaming && (
-          <div className="flex flex-col items-center justify-center h-full gap-3 opacity-70">
+          <div className="flex flex-col items-center justify-center h-full gap-3">
             <span className="text-4xl" style={{ fontFamily: "var(--font-display)" }}>🍜</span>
-            <span className="text-theme-muted text-sm" style={{ fontFamily: "var(--font-display)" }}>欢迎光临 · 请点餐</span>
+            <span className="text-sm" style={{ fontFamily: "var(--font-display)", color: "rgba(255,248,230,0.8)" }}>欢迎光临 · 请点餐</span>
           </div>
         )}
 
@@ -287,7 +388,7 @@ export function ChatView({ threadId, onInvoke, onStop, onResume, streamEvents, a
         {thinkingAgents.map((a) => (
           <div key={`thinking-${a.id}`} className="flex items-center gap-2 text-sm mb-2">
             <span className="status-light status-thinking" />
-            <span className="text-theme-muted text-xs">{getAgentInfo(a.id).agentName} 正在思考...</span>
+            <span className="text-xs" style={{ color: "rgba(255,248,230,0.7)" }}>{getAgentInfo(a.id).agentName} 正在思考...</span>
           </div>
         ))}
 
@@ -324,17 +425,17 @@ export function ChatView({ threadId, onInvoke, onStop, onResume, streamEvents, a
             onClick={() => onResume()}
             className="w-full text-xs py-1.5 rounded-lg transition-colors"
             style={{
-              background: "var(--card)",
-              border: "1px dashed var(--border)",
-              color: "var(--text-muted)",
+              background: "rgba(255,248,230,0.15)",
+              border: "1px dashed rgba(255,248,230,0.3)",
+              color: "rgba(255,248,230,0.6)",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = "var(--accent)";
               e.currentTarget.style.color = "var(--accent)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--border)";
-              e.currentTarget.style.color = "var(--text-muted)";
+              e.currentTarget.style.borderColor = "rgba(255,248,230,0.3)";
+              e.currentTarget.style.color = "rgba(255,248,230,0.6)";
             }}
           >
             🔄 恢复上次会话（继续未完成的工作）

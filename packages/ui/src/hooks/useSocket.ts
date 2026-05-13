@@ -13,10 +13,11 @@ export function useSocket(
   threadId: string | null,
   callbacks: {
     onMessage?: (msg: { id: string; threadId: string; agentId: string; role: string; content: string; timestamp: number }) => void;
-    onEvent?: (event: { type: string; agentId?: string; text?: string; response?: string; message?: string; cost?: number; inputTokens?: number; outputTokens?: number; name?: string }) => void;
+    onEvent?: (event: { type: string; threadId?: string; agentId?: string; text?: string; response?: string; message?: string; cost?: number; inputTokens?: number; outputTokens?: number; name?: string }) => void;
     onAgentStatus?: (data: { agentId: string; status: string; message: string; currentTask?: string }) => void;
     onAgentsStatus?: (data: Record<string, { id: string; name: string; avatar?: string; status: string; message: string; statusMessage?: string; currentTask?: string; pendingCount?: number }>) => void;
     onTaskQueue?: (data: Record<string, { current: { from: string; summary: string } | null; pending: Array<{ from: string; summary: string }> }>) => void;
+    onTaskBoard?: (tasks: Array<{ id: string; threadId: string; title: string; description?: string; createdBy: string; createdByName: string; assignee?: string; assigneeName?: string; status: "pending" | "in_progress" | "done"; createdAt: number; completedAt?: number }>) => void;
     onDisconnect?: () => void;
     onReconnect?: () => void;
   },
@@ -64,6 +65,7 @@ export function useSocket(
     socket.on("agent-status-update", (data) => cbRef.current.onAgentStatus?.(data));
     socket.on("agents-status", (data) => cbRef.current.onAgentsStatus?.(data));
     socket.on("task-queue", (data) => cbRef.current.onTaskQueue?.(data));
+    socket.on("task-board", (data) => cbRef.current.onTaskBoard?.(data));
 
     return () => {
       socket.disconnect();

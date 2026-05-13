@@ -1,11 +1,14 @@
-import { useState } from "react";
-import type { AgentStatus } from "../types";
+import { useState, useEffect } from "react";
+import type { AgentStatus, BoardTask } from "../types";
 import { type Theme } from "../themes";
+import { api } from "../api/client";
 
 interface Props {
   agents: Record<string, AgentStatus>;
   theme: Theme;
   taskQueues?: Record<string, { current: { from: string; summary: string } | null; pending: Array<{ from: string; summary: string }> }>;
+  boardTasks?: BoardTask[];
+  threadId?: string | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -18,14 +21,25 @@ const STATUS_LABEL: Record<string, string> = {
   queued: "排队中",
 };
 
-export function AgentPanel({ agents, theme, taskQueues = {} }: Props) {
+export function AgentPanel({ agents, theme, taskQueues = {}, boardTasks = [], threadId }: Props) {
   const entries = Object.values(agents);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [boardExpanded, setBoardExpanded] = useState(true);
 
   const toggleExpand = (id: string) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
 
+  // 分组任务
+  const pendingTasks = boardTasks.filter((t) => t.status === "pending");
+  const inProgressTasks = boardTasks.filter((t) => t.status === "in_progress");
+  const doneTasks = boardTasks.filter((t) => t.status === "done");
+
+  const getAgentAvatar = (agentId?: string) => {
+    if (!agentId) return "🐱";
+    return theme.agents[agentId]?.avatar ?? "🐱";
+  };
+
   return (
-    <div className="flex flex-col shrink-0">
+    <div className="flex flex-col shrink-0 min-h-0 flex-1">
       <div className="p-2.5 border-b border-theme flex items-center gap-1.5" style={{ fontFamily: "var(--font-display)" }}>
         <span className="text-sm">厨房</span>
         <span className="text-xs font-semibold text-theme-muted tracking-wider">店员状态</span>
@@ -128,6 +142,75 @@ export function AgentPanel({ agents, theme, taskQueues = {} }: Props) {
           })
         )}
       </div>
+
+      {/* 任务看板 */}
+      {boardTasks.length > 0 && (
+        <div className="border-t border-theme">
+          <button
+            onClick={() => setBoardExpanded(!boardExpanded)}
+            className="w-full px-2.5 py-2 flex items-center justify-between text-xs text-theme-muted hover:text-theme transition-colors"
+          >
+            <span className="flex items-center gap-1.5" style={{ fontFamily: "var(--font-display)" }}>
+              <span>📋</span>
+              <span>任务看板</span>
+              <span className="text-[10px] opacity-60">
+                {pendingTasks.length + inProgressTasks.length} 进行中 · {doneTasks.length} 完成
+              </span>
+            </span>
+            <span className="text-[10px]">{boardExpanded ? "▲" : "▼"}</span>
+          </button>
+
+          {boardExpanded && (
+            <div className="px-2 pb-2 space-y-1 max-h-64 overflow-y-auto">
+              {/* 进行中 */}
+              {inProgressTasks.map((t) => (
+                <div key={t.id} className="task-card rounded px-2 py-1.5 flex items-start gap-1.5"
+                  style={{ borderLeft: "3px solid var(--accent)", background: "rgba(199, 139, 46, 0.08)" }}
+                >
+                  <span className="text-[10px] mt-0.5">{getAgentAvatar(t.assignee)}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] text-theme font-medium truncate">{t.title}</div>
+                    <div className="text-[9px] text-theme-muted">
+                      {t.assigneeName ?? "未分配"} · {t.createdByName}创建
+                    </div>
+                  </div>
+                  <span className="text-[9px] text-amber-500 shrink-0">进行中</span>
+                </div>
+              ))}
+
+              {/* 待办 */}
+              {pendingTasks.map((t) => (
+                <div key={t.id} className="task-card rounded px-2 py-1.5 flex items-start gap-1.5"
+                  style={{ borderLeft: "3px solid var(--border)" }}
+                >
+                  <span className="text-[10px] mt-0.5">{getAgentAvatar(t.assignee)}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] text-theme truncate">{t.title}</div>
+                    <div className="text-[9px] text-theme-muted">
+                      {t.assigneeName ? `→ ${t.assigneeName}` : "待分配"} · {t.createdByName}创建
+                    </div>
+                  </div>
+                  <span className="text-[9px] text-theme-muted shrink-0">待办</span>
+                </div>
+              ))}
+
+              {/* 已完成 */}
+              {doneTasks.map((t) => (
+                <div key={t.id} className="task-card rounded px-2 py-1.5 flex items-start gap-1.5 opacity-50"
+                  style={{ borderLeft: "3px solid #4ade80" }}
+                >
+                  <span className="text-[10px] mt-0.5">{getAgentAvatar(t.assignee)}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] text-theme line-through truncate">{t.title}</div>
+                    <div className="text-[9px] text-theme-muted">{t.assigneeName ?? "?"} · 已完成</div>
+                  </div>
+                  <span className="text-[9px] text-green-500 shrink-0">✓</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

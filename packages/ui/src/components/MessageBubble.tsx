@@ -115,7 +115,7 @@ function ThinkingPlaceholder({ theme }: { theme: { color: string } }) {
   return (
     <div className="flex items-center gap-2 px-2.5 py-2 text-sm">
       <span className={`status-light status-thinking`} />
-      <span className="text-theme-muted text-xs">正在思考</span>
+      <span className="text-xs" style={{ color: "rgba(255,248,230,0.7)" }}>正在思考</span>
     </div>
   );
 }

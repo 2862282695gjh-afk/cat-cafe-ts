@@ -65,3 +65,17 @@ export interface StreamEvent {
   inputTokens?: number;
   outputTokens?: number;
 }
+
+export interface BoardTask {
+  id: string;
+  threadId: string;
+  title: string;
+  description?: string;
+  createdBy: string;
+  createdByName: string;
+  assignee?: string;
+  assigneeName?: string;
+  status: "pending" | "in_progress" | "done";
+  createdAt: number;
+  completedAt?: number;
+}

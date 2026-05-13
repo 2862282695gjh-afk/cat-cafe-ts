@@ -28,6 +28,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ title, projectId }),
     }),
+  updateThread: (id: string, data: Record<string, unknown>) =>
+    fetchJSON<{ status: string }>(`/api/threads/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
   deleteThread: (id: string) =>
     fetchJSON<{ status: string }>(`/api/threads/${id}`, { method: "DELETE" }),
 

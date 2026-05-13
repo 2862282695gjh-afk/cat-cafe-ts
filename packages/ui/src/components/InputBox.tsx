@@ -16,6 +16,7 @@ const MENTION_AGENTS = [
   { id: "sasaki", names: ["佐佐木", "sasaki"], label: "佐佐木 (前端)" },
   { id: "bunzo", names: ["文藏", "bunzo"], label: "文藏 (后端)" },
   { id: "kohana", names: ["小花", "kohana", "品控"], label: "小花 (QA)" },
+  { id: "sabu", names: ["萨布", "撒布", "sabu"], label: "萨布 (文档)" },
 ];
 
 export function InputBox({ onSend, onStop, isStreaming, queue, onDequeue, onPopQueue, disabled, theme }: Props) {

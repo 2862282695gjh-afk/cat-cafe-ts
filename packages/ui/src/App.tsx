@@ -6,7 +6,7 @@ import { ThemeProvider, useTheme } from "./themes";
 import { ramenTheme } from "./themes/ramen";
 import { useSocket } from "./hooks/useSocket";
 import { useAgents } from "./hooks/useAgents";
-import type { StreamEvent, AgentStatus, TaskQueueItem } from "./types";
+import type { StreamEvent, AgentStatus, TaskQueueItem, BoardTask } from "./types";
 
 function loadActiveThread(): string | null {
   try { return localStorage.getItem("catcafe:activeThread"); } catch { return null; }
@@ -26,6 +26,7 @@ function AppContent() {
 
   const { agents, refresh: refreshAgents, setFromSocket } = useAgents();
   const [taskQueues, setTaskQueues] = useState<Record<string, { current: { from: string; summary: string } | null; pending: Array<{ from: string; summary: string }> }>>({});
+  const [boardTasks, setBoardTasks] = useState<BoardTask[]>([]);
 
   const handleStreamEvent = useCallback((event: StreamEvent) => {
     setStreamEvents((prev) => [...prev, event]);
@@ -58,6 +59,10 @@ function AppContent() {
     setTaskQueues(data);
   }, []);
 
+  const handleTaskBoard = useCallback((tasks: BoardTask[]) => {
+    setBoardTasks(tasks);
+  }, []);
+
   const handleDisconnect = useCallback(() => {
     setStreamEvents((prev) => [
       ...prev,
@@ -74,6 +79,7 @@ function AppContent() {
     onAgentStatus: handleAgentStatus,
     onAgentsStatus: handleAgentsStatus,
     onTaskQueue: handleTaskQueue,
+    onTaskBoard: handleTaskBoard,
     onDisconnect: handleDisconnect,
     onReconnect: handleReconnect,
   });
@@ -129,7 +135,7 @@ function AppContent() {
 
       {/* 右栏：厨房看板 */}
       <aside className="w-64 border-l border-theme flex flex-col min-h-0 bg-theme-sidebar kitchen-board">
-        <AgentPanel agents={agents} theme={theme} taskQueues={taskQueues} />
+        <AgentPanel agents={agents} theme={theme} taskQueues={taskQueues} boardTasks={boardTasks} />
       </aside>
     </div>
   );
