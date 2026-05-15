@@ -8,6 +8,7 @@ import { projectRoutes } from "./routes/projects.js";
 import { agentRoutes } from "./routes/agents.js";
 import { wikiRoutes } from "./routes/wiki.js";
 import { taskRoutes } from "./routes/tasks.js";
+import { sessionRoutes } from "./routes/sessions.js";
 import { JsonFileStore } from "./store/json-file.js";
 import { FileMemoryStore } from "./store/file-memory.js";
 import { SessionManager } from "./session-manager.js";
@@ -42,6 +43,9 @@ export function createApp() {
   // 任务看板
   const taskBoardStore = new TaskBoardStore();
   taskRoutes(app, taskBoardStore);
+
+  // Session Search API
+  sessionRoutes(app);
 
   return { app, store, sessionManager, memoryExtractor, fileMemory, projectDocStore, projectStore, wikiStore, taskBoardStore };
 }

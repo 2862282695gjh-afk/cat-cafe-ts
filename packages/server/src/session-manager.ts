@@ -5,18 +5,15 @@
  * - 事前拦截：发送消息前检查 token 占用率
  * - 封印（Seal）：超阈值时标记旧 session 为 sealed
  * - Sub-agent 尸检：满血 sub-agent 读完整 transcript 生成结构化 digest
- * - 重生（Bootstrap）：新 session 注入 digest + 长期记忆 + 规则
+ * - 重生（Bootstrap）：新 session 注入 digest + 长期记忆 + 搜索工具指引
  *
  * 优势：不让濒死猫写遗书，而是让满血的新猫查旧记录。
  */
-import { readdir, readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { homedir } from "node:os";
 import type { ResultEvent } from "@cat-noodle/core";
 import { ClaudeProcess } from "@cat-noodle/provider-claude";
 import { FileMemoryStore } from "./store/file-memory.js";
 import { agentConfigs } from "./pool.js";
-import { loadChain, saveChain, getActiveSessionRecord, type SessionRecord } from "./store/session-store.js";
+import { loadChain, saveChain, getActiveSessionRecord, readSessionTranscript, type SessionRecord } from "./store/session-store.js";
 
 // ========== 类型 ==========
 
@@ -24,11 +21,6 @@ interface SessionState {
   sessionId: string;
   totalInputTokens: number;
   contextWindow: number;
-}
-
-interface SessionMessage {
-  role: "user" | "assistant";
-  content: string;
 }
 
 // ========== SessionManager ==========
@@ -106,7 +98,7 @@ export class SessionManager {
 
     // 1. 读取完整 transcript
     console.log(`[SessionChain] agent ${agentId}: 读取 session ${active.sessionId.slice(0, 8)}... 的 transcript`);
-    const history = await this.readSessionHistory(active.sessionId);
+    const history = await readSessionTranscript(active.sessionId);
 
     // 2. 生成结构化 digest（sub-agent 尸检）
     let digest = "";
@@ -163,7 +155,12 @@ export class SessionManager {
     }
 
     parts.push(`\n## 规则`);
-    parts.push(`当你不确定"之前做了什么、为什么那样做"时，不要猜。基于你手头的摘要和记忆继续工作。`);
+    parts.push(`当你不确定"之前做了什么、为什么那样做"时，不要猜。按以下顺序查找：`);
+    parts.push(`1. 先用 curl 搜索历史 session：curl -s "http://localhost:3001/api/sessions/search?threadId=${threadId}&agentId=${agentId}&q=关键词"`);
+    parts.push(`2. 查看 session chain 历史：curl -s "http://localhost:3001/api/sessions/chain?threadId=${threadId}&agentId=${agentId}"`);
+    parts.push(`3. 需要详细信息时：curl -s "http://localhost:3001/api/sessions/{sessionId}/events"`);
+    parts.push(`4. 查看某代摘要：curl -s "http://localhost:3001/api/sessions/{sessionId}/digest"`);
+    parts.push(`不要凭空猜测，先搜索再回答。`);
     parts.push(`=== Session Chain 重生结束 ===`);
 
     return parts.join("\n");
@@ -193,69 +190,6 @@ export class SessionManager {
   }
 
   // ========== 私有方法 ==========
-
-  /** 读取 session JSONL 文件中的对话历史 */
-  private async readSessionHistory(sessionId: string): Promise<SessionMessage[]> {
-    const claudeDir = join(homedir(), ".claude", "projects");
-    let dirNames: string[];
-
-    try {
-      dirNames = await readdir(claudeDir);
-    } catch {
-      return [];
-    }
-
-    for (const name of dirNames) {
-      const filePath = join(claudeDir, name, `${sessionId}.jsonl`);
-      try {
-        const raw = await readFile(filePath, "utf-8");
-        return this.parseSessionJsonl(raw);
-      } catch {
-        // 文件不存在，尝试下一个目录
-      }
-    }
-
-    console.log(`[SessionChain] session file not found: ${sessionId}`);
-    return [];
-  }
-
-  /** 解析 JSONL，提取 user/assistant 消息 */
-  private parseSessionJsonl(raw: string): SessionMessage[] {
-    const messages: SessionMessage[] = [];
-
-    for (const line of raw.split("\n")) {
-      if (!line.trim()) continue;
-      try {
-        const obj = JSON.parse(line);
-        const type = obj.type;
-
-        if (type === "user") {
-          const content = this.extractText(obj.message?.content);
-          if (content) messages.push({ role: "user", content });
-        } else if (type === "assistant") {
-          const content = this.extractText(obj.message?.content);
-          if (content) messages.push({ role: "assistant", content });
-        }
-      } catch {
-        // 跳过无法解析的行
-      }
-    }
-
-    return messages;
-  }
-
-  /** 从 content 中提取纯文本 */
-  private extractText(content: unknown): string {
-    if (typeof content === "string") return content.trim();
-    if (Array.isArray(content)) {
-      return content
-        .filter((b: Record<string, unknown>) => b.type === "text")
-        .map((b: Record<string, unknown>) => (b.text as string)?.trim() ?? "")
-        .filter(Boolean)
-        .join("\n");
-    }
-    return "";
-  }
 
   /** Sub-agent 尸检：读完整 transcript 生成结构化 digest */
   private async generateDigest(messages: SessionMessage[]): Promise<string> {
